@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/brand/homi-banner.png" alt="Homi: a dashboard for your homelab" width="100%">
+</p>
+
 # Homi
 
 A self-hostable homelab dashboard: a fast launcher for your services, with live health checks and uptime history. One container, one SQLite file, no external database.

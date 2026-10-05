@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#111a2e"/><stop offset="1" stop-color="#070b16"/></linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0b1020"/></linearGradient>
+    <linearGradient id="hs" gradientUnits="userSpaceOnUse" x1="28" y1="32" x2="92" y2="88"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#6366f1"/></linearGradient>
+    <linearGradient id="wm" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <radialGradient id="glow" cx="0.2" cy="0.5" r="0.7"><stop offset="0" stop-color="#6366f1" stop-opacity="0.22"/><stop offset="1" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g1"><stop offset="0" stop-color="#2dd4bf" stop-opacity="0.12"/><stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g2"><stop offset="0" stop-color="#6366f1" stop-opacity="0.2"/><stop offset="1" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#94a3b8" fill-opacity="0.18"/></pattern>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#dots)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <rect x="820" y="-150" width="600" height="520" fill="url(#g1)"/>
+  <rect x="900" y="360" width="500" height="440" fill="url(#g2)"/>
+  <g fill="none" stroke="#818cf8" stroke-opacity="0.28" stroke-width="1.5" stroke-linecap="round">
+    <path d="M1010 120 H1090 V220 H1180 V300"/>
+    <path d="M1090 220 V330 H1010"/>
+    <path d="M1180 300 V420 H1100 V520"/>
+    <path d="M60 80 H140 V40"/>
+    <path d="M60 560 H200 V600"/>
+  </g>
+  <g fill="#0b1020" stroke="#2dd4bf" stroke-opacity="0.55" stroke-width="1.5">
+    <circle cx="1010" cy="120" r="5"/>
+    <circle cx="1090" cy="220" r="5"/>
+    <circle cx="1180" cy="300" r="5"/>
+    <circle cx="1010" cy="330" r="5"/>
+    <circle cx="1100" cy="520" r="5"/>
+  </g>
+  <g fill="#2dd4bf">
+    <circle cx="300" cy="90" r="2.5" fill-opacity="0.7"/>
+    <circle cx="640" cy="110" r="2" fill-opacity="0.5"/>
+    <circle cx="900" cy="560" r="2.5" fill-opacity="0.6"/>
+    <circle cx="420" cy="590" r="2" fill-opacity="0.5"/>
+  </g>
+  <g transform="translate(150,170) scale(2.4)">
+    <rect width="120" height="120" rx="28" fill="url(#tile)" stroke="#334155" stroke-width="0.8"/>
+    <path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#hs)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="67" r="11" fill="#2dd4bf" fill-opacity="0.18"/>
+    <circle cx="60" cy="67" r="5.5" fill="#2dd4bf"/>
+  </g>
+  <text x="490" y="330" font-family="Inter,'SF Pro Display','Helvetica Neue',Arial,sans-serif" font-size="150" font-weight="700" letter-spacing="-5" fill="url(#wm)">homi</text>
+  <text x="496" y="395" font-family="Inter,'SF Pro Display','Helvetica Neue',Arial,sans-serif" font-size="36" font-weight="400" fill="#cbd5e1">A dashboard for your homelab.</text>
+  <g font-family="'SF Mono',Menlo,monospace" font-size="22" fill="#94a3b8">
+    <text x="496" y="455">self-hosted  /  at a glance  /  yours</text>
+  </g>
+</svg>
