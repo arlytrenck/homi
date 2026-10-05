@@ -1,0 +1,19 @@
+services:
+  homi:
+    image: ghcr.io/arlytrenck/homi:latest
+    container_name: homi
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      TZ: America/Chicago
+      # Optional but recommended: pin the key that encrypts integration secrets.
+      # Generate with: openssl rand -base64 32
+      # HOMI_SECRET_KEY: ${HOMI_SECRET_KEY}
+      # HOMI_SETUP_TOKEN: change-me   # require a token on first-run setup
+      # HOMI_PUBLIC_URL: https://homi.example.com
+      # HOMI_TRUST_PROXY: "1"          # behind a reverse proxy that sets X-Forwarded-*
+    volumes:
+      - ./data:/data
+    cap_add:
+      - NET_RAW   # ICMP ping checks

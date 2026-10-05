@@ -1,0 +1,8 @@
+node_modules
+.next
+dist
+data
+.git
+tests
+docs
+*.md
