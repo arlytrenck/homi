@@ -42,3 +42,37 @@ export const SettingsInput = z.object({
   retentionHours: z.number().int().min(1).max(24 * 30).optional(),
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
+
+const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
+
+export const IntegrationInput = z.object({
+  type: z.string().min(1).max(40),
+  name: z.string().trim().min(1).max(100),
+  baseUrl,
+  config: z.record(z.string(), z.any()).default({}),
+  /** undefined/omitted = keep, null = clear, string = set */
+  secrets: z.record(z.string(), z.string().nullable()).default({}),
+  ignoreTls: z.boolean().default(false),
+  enabled: z.boolean().default(true),
+});
+export type IntegrationInput = z.infer<typeof IntegrationInput>;
+
+export const IntegrationTestInput = z.object({
+  integrationId: z.string().optional(),
+  type: z.string().min(1).max(40),
+  baseUrl,
+  config: z.record(z.string(), z.any()).default({}),
+  secrets: z.record(z.string(), z.string().nullable()).default({}),
+  ignoreTls: z.boolean().default(false),
+});
+
+export const WidgetInput = z.object({
+  kind: z.string().min(1).max(80),
+  integrationId: z.string().nullish(),
+  title: z.string().max(100).nullish(),
+  options: z.record(z.string(), z.any()).default({}),
+  area: z.enum(["header", "main", "sidebar"]).default("main"),
+  size: z.enum(["sm", "md", "lg"]).default("md"),
+  hiddenPublic: z.boolean().default(true),
+});
+export type WidgetInput = z.infer<typeof WidgetInput>;

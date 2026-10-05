@@ -11,11 +11,12 @@ A self-hostable homelab dashboard: a fast launcher for your services, with live 
 - **Service launcher**: groups, icons, descriptions, search (`/`), drag-and-drop ordering (touch and keyboard friendly), light/dark theme.
 - **Live status**: HTTP, TCP and ping checks with up / degraded / down states, SSE live updates, 24h/7d/30d/90d uptime history with hourly rollups.
 - **Ops view** (`/ops`): dense NOC-style table, worst-first, with a kiosk mode (`/ops?kiosk=1`).
+- **Widgets and integrations**: Proxmox, Docker, Pi-hole, AdGuard Home, UniFi, Synology, TrueNAS, Sonarr, Radarr, Lidarr, Prowlarr, Authentik, Uptime Kuma and Grafana, plus built-in weather, notes, bookmarks and host stats. See [docs/integrations.md](docs/integrations.md); add your own with the [plugin API](docs/plugin-api.md).
 - **Backup**: YAML export/import with dry-run preview.
 - **Security by default**: argon2id password, hashed server-side sessions, CSRF origin checks, login rate limiting, SSRF-guarded outbound requests, AES-256-GCM encryption for stored secrets.
 - **Installable PWA manifest**, multi-arch (amd64/arm64) image pipeline.
 
-See [docs/roadmap.md](docs/roadmap.md) for what is next (integrations, widgets, Docker auto-discovery).
+See [docs/roadmap.md](docs/roadmap.md) for what is next (Docker label auto-discovery, offline mode, e2e tests).
 
 ## Quick start
 

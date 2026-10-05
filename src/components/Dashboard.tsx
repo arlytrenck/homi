@@ -8,12 +8,14 @@ import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoor
 import { CSS } from "@dnd-kit/utilities";
 import { Activity, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
-import type { DashboardDTO, GroupDTO, ServiceDTO, Status } from "@/lib/types";
+import type { DashboardDTO, GroupDTO, ServiceDTO, Status, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
 import { StatusDot } from "./StatusDot";
 import { ServiceIcon } from "./ServiceIcon";
 import { ServiceDialog } from "./ServiceDialog";
 import { Clock } from "./Clock";
+import { WidgetCard } from "./WidgetCard";
+import { WidgetDialog } from "./WidgetDialog";
 
 const UNGROUPED = "__none__";
 
@@ -80,6 +82,7 @@ export function Dashboard() {
   const [edit, setEdit] = useState(false);
   const [q, setQ] = useState("");
   const [dialog, setDialog] = useState<{ service: ServiceDTO | null; groupId?: string | null } | null>(null);
+  const [wdialog, setWdialog] = useState<{ widget: WidgetDTO | null } | null>(null);
   const [dark, setDark] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -159,6 +162,15 @@ export function Dashboard() {
         ) : <Link href="/login" className="btn">Sign in</Link>}
       </header>
 
+      {(data.widgets.length > 0 || isEdit) && (
+        <section aria-label="Widgets" className="mb-8">
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,17rem),1fr))" }}>
+            {data.widgets.map((w) => <WidgetCard key={w.id} w={w} edit={isEdit} onEdit={() => setWdialog({ widget: w })} onDelete={async () => { if (confirm("Delete this widget?")) { await api(`/api/widgets/${w.id}`, { method: "DELETE" }); refresh(); } }} />)}
+            {isEdit && <button className="card grid min-h-20 place-items-center border-dashed text-sm text-muted hover:border-accent" onClick={() => setWdialog({ widget: null })}><span className="flex items-center gap-1"><Plus size={14} /> Add widget</span></button>}
+          </div>
+        </section>
+      )}
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         {groups.map((g) => (
           <Section key={g.id} group={g} services={by(g.id)} edit={isEdit}
@@ -179,6 +191,7 @@ export function Dashboard() {
         </div>
       )}
       {needle && !filtered.length && <p className="text-center text-muted">No matches for “{q}”.</p>}
+      {wdialog && <WidgetDialog widget={wdialog.widget} onClose={() => setWdialog(null)} onSaved={() => { setWdialog(null); qc.invalidateQueries({ queryKey: ["widget"] }); refresh(); }} />}
       {dialog && <ServiceDialog service={dialog.service} groups={groups} defaultGroupId={dialog.groupId} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); refresh(); }} />}
     </div>
   );
