@@ -246,6 +246,11 @@ td.mono{color:var(--muted);font-size:.78rem}
 .track span b{width:24px;height:24px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);display:grid;place-items:center;font:500 .72rem var(--mono);color:var(--teal-text)}
 .step{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;align-items:flex-start}
 .steps{gap:12px}
+.track span b.ib{background:#f1f5f9;border-color:#e2e8f0}
+.track span b img{display:block}
+.track span b{color:var(--muted)}
+.card .ico img{display:block}
+.card .ico{background:#f1f5f9;border-color:#e2e8f0}
 /* terminal */
 .term{background:var(--navy-950);color:#e6eaf4;border:1px solid #26324a;border-radius:12px;overflow:hidden;margin-top:32px;box-shadow:var(--shadow)}
 .term-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #26324a;font:400 .75rem var(--mono);color:#94a3b8}
@@ -452,7 +457,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
     <p class="lead rv" style="--i:2">Show live numbers next to each service, or write your own with the plugin API.</p>
   </div>
   <div class="marquee" id="mq" aria-label="Supported integrations"></div>
-  <div class="wrap"><p class="note">Integrations are tested against mock servers, not yet against live instances. See the <a href="https://github.com/arlytrenck/homi/blob/main/docs/integrations.md">integration docs</a> and <a href="https://github.com/arlytrenck/homi/blob/main/docs/plugin-api.md">plugin API</a>.</p></div>
+  <div class="wrap"><p class="note">Integrations are tested against mock servers, not yet against live instances. See the <a href="https://github.com/arlytrenck/homi/blob/main/docs/integrations.md">integration docs</a> and <a href="https://github.com/arlytrenck/homi/blob/main/docs/plugin-api.md">plugin API</a>. Logos come from <a href="https://github.com/homarr-labs/dashboard-icons">Dashboard Icons</a> and belong to their respective owners.</p></div>
 </section>
 
 <section id="start" class="band">
@@ -523,14 +528,14 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
   /* dashboard mock */
   var ico={server:'<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>',chart:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',box:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',film:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',down:'<path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/>',cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 18.9"/>'};
   function bars(bad){var s='';for(var i=0;i<30;i++){var c='';if(bad==='d'&&i>25)c='d';else if(bad==='w'&&(i===18||i===24||i>27))c='w';else if(i===7&&bad==='x')c='w';s+='<b class="'+c+'" style="--k:'+i+'"></b>'}return s}
-  var A=[['Proxmox','pve.lan:8006','server','up','',12],['Pi-hole','dns.lan/admin','shield','up','',4],['Grafana','metrics.lan','chart','up','x',62],['Nextcloud','cloud.lan','cloud','down','d',0]];
-  var B=[['Jellyfin','media.lan:8096','film','warn','w',1800],['Sonarr','sonarr.lan','down','up','',88],['Radarr','radarr.lan','down','up','x',91],['Immich','photos.lan','box','up','',140]];
+  var A=[['Proxmox','pve.lan:8006','proxmox','up','',12],['Pi-hole','dns.lan/admin','pi-hole','up','',4],['Grafana','metrics.lan','grafana','up','x',62],['Nextcloud','cloud.lan','nextcloud','down','d',0]];
+  var B=[['Jellyfin','media.lan:8096','jellyfin','warn','w',1800],['Sonarr','sonarr.lan','sonarr','up','',88],['Radarr','radarr.lan','radarr','up','x',91],['Immich','photos.lan','immich','up','',140]];
   var S={up:['ck','Up'],warn:['tri','Degraded'],down:['x','Down']};
   function ms(v){return v?(v>=1000?(v/1000).toFixed(1)+' s':v+' ms'):'--'}
   function render(id,list){
     document.getElementById(id).innerHTML=list.map(function(r){
       var s=S[r[3]];
-      return '<div class="card"><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ico[r[2]]+'</svg></div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div></div>';
+      return '<div class="card"><div class="ico"><img src="icons/'+r[2]+'.svg" alt="" width="22" height="22" loading="lazy">'+'</div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div></div>';
     }).join('');
   }
   render('cards-a',A);render('cards-b',B);
@@ -571,7 +576,10 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
 
   /* marquee */
   var names=['Proxmox','Docker','Pi-hole','AdGuard Home','UniFi','Synology','TrueNAS','Sonarr','Radarr','Lidarr','Prowlarr','Authentik','Uptime Kuma','Grafana','Weather','Notes','Bookmarks','Host stats'];
-  function row(list,cls){var h=list.map(function(n){return '<span><b>'+n.charAt(0)+'</b>'+n+'</span>'}).join('');return '<div class="track '+cls+'">'+h+h+'</div>'}
+  var slug={'Proxmox':'proxmox','Docker':'docker','Pi-hole':'pi-hole','AdGuard Home':'adguard-home','UniFi':'unifi','Synology':'synology','TrueNAS':'truenas','Sonarr':'sonarr','Radarr':'radarr','Lidarr':'lidarr','Prowlarr':'prowlarr','Authentik':'authentik','Uptime Kuma':'uptime-kuma','Grafana':'grafana'};
+  var lu={'Weather':'<path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 18.9z"/>','Notes':'<path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/>','Bookmarks':'<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>','Host stats':'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>'};
+  function badge(n){return slug[n]?'<b class="ib"><img src="icons/'+slug[n]+'.svg" alt="" width="18" height="18" loading="lazy"></b>':'<b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+lu[n]+'</svg></b>'}
+  function row(list,cls){var h=list.map(function(n){return '<span>'+badge(n)+n+'</span>'}).join('');return '<div class="track '+cls+'">'+h+h+'</div>'}
   document.getElementById('mq').innerHTML=row(names.slice(0,9).concat(names.slice(9)),'')+row(names.slice().reverse(),'rev');
 
   /* terminal typing */
