@@ -27,12 +27,14 @@ The mark is a house (home) with a status dot at its center: the dot is a service
 | `homi-mark.svg` | Mark alone, transparent, for **dark** surfaces. |
 | `homi-mark-light.svg` | Mark alone for **light** surfaces (darker gradient). |
 | `homi-mark-mono.svg` | One color via `currentColor`: print, embossing, single-color contexts. |
-| `homi-wordmark.svg` | Wordmark alone (dark surfaces). |
+| `homi-wordmark.svg` / `homi-wordmark-light.svg` / `homi-wordmark-mono.svg` | Wordmark alone: dark surfaces, light surfaces, single color. Text is outlined from Inter, so it renders identically everywhere. |
 | `homi-lockup.svg` / `homi-lockup-light.svg` | Tile + wordmark, horizontal. Light variant has a darker wordmark gradient for white backgrounds. |
 | `homi-icon-maskable.svg` | Full-bleed PWA/Android icon; mark sits inside the 80% safe zone. |
-| `homi-banner.svg` / `.png` | 1280×640 social/README banner. |
+| `homi-banner.svg` / `.png` | 1280×640 README banner. |
+| `homi-social-card.svg` | 1200×630 Open Graph / Twitter card (also fits GitHub's social preview slot). |
+| `export/` | Ready-to-use PNGs (transparent, 2×) and vector PDFs for print: lockup, wordmark and mark in dark and light, plus `homi-social-card.png`. |
 
-Regenerate the PNG icons with `node scripts/brand-render.mjs`.
+Everything is generated and reproducible: `node scripts/brand-outline.mjs` rebuilds the outlined wordmark, lockups and social card from Inter (`@fontsource/inter`); `node scripts/brand-render.mjs` rebuilds the app icons and the `export/` PNGs and PDFs.
 
 ### Rules
 
@@ -42,8 +44,6 @@ Regenerate the PNG icons with `node scripts/brand-render.mjs`.
 - Don't recolor, rotate, outline, add shadows or glows, stretch, or change the gradient direction (teal top-left to indigo bottom-right).
 - Don't put the mark on busy photos. Use the tile.
 - Wordmark is lowercase: **homi**.
-
-> Note: the wordmark SVGs use live text (Inter, with system fallbacks). For print or other places that need exact rendering, outline the text first.
 
 ## Color
 
