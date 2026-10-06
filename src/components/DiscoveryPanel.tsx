@@ -34,15 +34,15 @@ export function DiscoveryPanel() {
       ) : (
         <>
           <p className="text-sm text-muted">Connected to <code>{data.endpoint}</code>. Last sync {ago(data.lastOkAt)}.{!data.discoveryHost && <> Set <code>HOMI_DISCOVERY_HOST</code> to derive URLs from published ports.</>}</p>
-          {data.lastError && <p role="alert" className="text-sm text-down">{data.lastError}</p>}
-          {data.lastResult?.skipped.map((s) => <p key={s.key} className="text-sm text-warn"><b>{s.key}</b>: {s.reason}</p>)}
+          {data.lastError && <p role="alert" className="text-sm text-down-fg">{data.lastError}</p>}
+          {data.lastResult?.skipped.map((s) => <p key={s.key} className="text-sm text-warn-fg"><b>{s.key}</b>: {s.reason}</p>)}
           <ul className="divide-y divide-border text-sm">
-            {data.services.map((s) => <li key={s.id} className="flex gap-2 py-1.5"><span className="min-w-0 flex-1 truncate">{s.name} <span className="text-muted">({s.container})</span></span>{s.missingSince ? <span className="text-warn">not running</span> : <span className="text-ok">running</span>}</li>)}
+            {data.services.map((s) => <li key={s.id} className="flex gap-2 py-1.5"><span className="min-w-0 flex-1 truncate">{s.name} <span className="text-muted">({s.container})</span></span>{s.missingSince ? <span className="text-warn-fg">not running</span> : <span className="text-ok-fg">running</span>}</li>)}
             {!data.services.length && <li className="py-1.5 text-muted">No labeled containers found yet.</li>}
           </ul>
         </>
       )}
-      {err && <p role="alert" className="text-sm text-down">{err}</p>}
+      {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
     </section>
   );
 }

@@ -17,7 +17,7 @@ A self-hostable homelab dashboard: a fast launcher for your services, with live 
 - **Security by default**: argon2id password, hashed server-side sessions, CSRF origin checks, login rate limiting, SSRF-guarded outbound requests, AES-256-GCM encryption for stored secrets.
 - **Installable PWA manifest**, multi-arch (amd64/arm64) image pipeline.
 
-See [docs/roadmap.md](docs/roadmap.md) for what is next (offline mode, widget ordering, e2e tests).
+See [docs/roadmap.md](docs/roadmap.md) for what is next (offline mode, widget ordering).
 
 ## Quick start
 
@@ -51,7 +51,8 @@ Forgot your password: `docker exec -it homi node dist/scripts/reset-password.js 
 ```bash
 corepack enable && pnpm install
 pnpm dev          # http://localhost:3000, data in ./data
-pnpm lint && pnpm typecheck && pnpm test
+pnpm lint && pnpm typecheck && pnpm test   # unit tests
+pnpm build && pnpm e2e                      # browser tests (first: pnpm exec playwright install chromium)
 pnpm build        # produces a self-contained .next/standalone
 ```
 

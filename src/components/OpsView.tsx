@@ -41,7 +41,7 @@ export function OpsView({ kiosk }: { kiosk: boolean }) {
   const rows = data.services.filter((s) => s.status).sort((a, b) => ORDER[a.status!.status] - ORDER[b.status!.status] || a.name.localeCompare(b.name));
   const counts = rows.reduce((m, s) => ({ ...m, [s.status!.status]: (m[s.status!.status] ?? 0) + 1 }), {} as Record<string, number>);
   return (
-    <div data-density="dense" className="mx-auto max-w-7xl px-4 py-3">
+    <main data-density="dense" className="mx-auto max-w-7xl px-4 py-3">
       {!kiosk && <Link href="/" className="btn mb-3 !min-h-8"><ArrowLeft size={14} /> Dashboard</Link>}
       <div className="mb-3 flex flex-wrap gap-4 text-sm" role="status">
         {(["down", "degraded", "up", "unknown"] as Status[]).map((s) => <span key={s} className="flex items-center gap-1.5"><StatusDot status={s} /> {counts[s] ?? 0} {s}</span>)}
@@ -63,6 +63,6 @@ export function OpsView({ kiosk }: { kiosk: boolean }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </main>
   );
 }

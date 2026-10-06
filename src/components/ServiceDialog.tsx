@@ -65,7 +65,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
           </fieldset>
         )}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="hiddenPublic" defaultChecked={service?.hiddenPublic} disabled={service?.source === "docker"} /> Hide from public view</label>
-        {err && <p role="alert" className="text-sm text-down">{err}</p>}
+        {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <div className="flex justify-end gap-2 pt-1"><button type="button" className="btn" onClick={() => ref.current?.close()}>Cancel</button><button className="btn btn-primary">Save</button></div>
       </form>
     </dialog>

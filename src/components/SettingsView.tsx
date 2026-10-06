@@ -35,7 +35,7 @@ function Security() {
   return (
     <section className="card space-y-3 p-5" aria-labelledby="h-sec">
       <h2 id="h-sec" className="font-semibold">Change password</h2>
-      <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (e) => { e.preventDefault(); const f = new FormData(e.currentTarget); try { await api("/api/auth/password", { method: "POST", body: { currentPassword: f.get("cur"), newPassword: f.get("new") } }); setNote("Password changed; other sessions signed out."); e.currentTarget.reset(); } catch (x) { setNote(msg(x)); } }}>
+      <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (e) => { e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); try { await api("/api/auth/password", { method: "POST", body: { currentPassword: f.get("cur"), newPassword: f.get("new") } }); setNote("Password changed; other sessions signed out."); form.reset(); } catch (x) { setNote(msg(x)); } }}>
         <div><label className="label" htmlFor="cur">Current password</label><input id="cur" name="cur" type="password" className="input" autoComplete="current-password" required /></div>
         <div><label className="label" htmlFor="new">New password (min. 10)</label><input id="new" name="new" type="password" className="input" autoComplete="new-password" minLength={10} required /></div>
         <div><button className="btn btn-primary">Change password</button> <span className="ml-2 text-sm text-muted" role="status">{note}</span></div>
@@ -70,9 +70,9 @@ function Backup() {
 
 export function SettingsView() {
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
+    <main className="mx-auto max-w-3xl space-y-5 px-4 py-6">
       <div className="flex items-center gap-3"><Link href="/" className="btn" aria-label="Back to dashboard"><ArrowLeft size={16} /></Link><h1 className="text-xl font-semibold">Settings</h1></div>
       <General /><IntegrationsPanel /><DiscoveryPanel /><Security /><Backup />
-    </div>
+    </main>
   );
 }

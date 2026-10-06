@@ -49,7 +49,7 @@ export function WidgetDialog({ widget, onClose, onSaved }: { widget: WidgetDTO |
           {sel && <FieldForm key={sel.value} fields={sel.options} values={widget?.options} prefix="o" />}
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="hiddenPublic" defaultChecked={widget ? !widget.hiddenPublic : false} /> Show in public view</label>
-        {err && <p role="alert" className="text-sm text-down">{err}</p>}
+        {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => ref.current?.close()}>Cancel</button><button className="btn btn-primary" disabled={!sel}>Save</button></div>
       </form>
     </dialog>

@@ -4,7 +4,7 @@ import { Pencil, Trash2, TriangleAlert } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { WidgetData, WidgetDTO } from "@/lib/types";
 
-const TONE = { ok: "text-ok", warn: "text-warn", down: "text-down", neutral: "" } as const;
+const TONE = { ok: "text-ok-fg", warn: "text-warn-fg", down: "text-down-fg", neutral: "" } as const;
 const TONE_BG = { ok: "bg-ok", warn: "bg-warn", down: "bg-down", neutral: "bg-unknown" } as const;
 
 export function WidgetCard({ w, edit, onEdit, onDelete }: { w: WidgetDTO; edit: boolean; onEdit: () => void; onDelete: () => void }) {
@@ -15,11 +15,11 @@ export function WidgetCard({ w, edit, onEdit, onDelete }: { w: WidgetDTO; edit: 
     <section aria-label={title} className={`card flex flex-col gap-2 p-3 ${w.size === "lg" ? "sm:col-span-2" : ""}`}>
       <header className="flex items-center gap-2 text-xs text-muted">
         <span className="min-w-0 flex-1 truncate">{title}</span>
-        {data?.error && <span title={data.error} className="flex items-center gap-1 text-warn"><TriangleAlert size={12} aria-hidden />{d ? "stale" : "error"}</span>}
+        {data?.error && <span title={data.error} className="flex items-center gap-1 text-warn-fg"><TriangleAlert size={12} aria-hidden />{d ? "stale" : "error"}</span>}
         {edit && <><button className="btn !min-h-7 !px-2" onClick={onEdit} aria-label={`Edit ${title}`}><Pencil size={12} /></button><button className="btn btn-danger !min-h-7 !px-2" onClick={onDelete} aria-label={`Delete ${title}`}><Trash2 size={12} /></button></>}
       </header>
       {isLoading && <div className="h-10 animate-pulse rounded bg-surface-2" aria-label="Loading" />}
-      {!d && data?.error && <p className="text-sm text-down" role="alert">{data.error}</p>}
+      {!d && data?.error && <p className="text-sm text-down-fg" role="alert">{data.error}</p>}
       {d?.stats && <dl className="grid gap-x-4 gap-y-1" style={{ gridTemplateColumns: `repeat(${Math.min(d.stats.length, 3)}, minmax(0,1fr))` }}>
         {d.stats.map((s) => <div key={s.label} className="min-w-0"><dd className={`truncate text-lg font-medium leading-tight tabular-nums ${TONE[s.tone ?? "neutral"]}`}>{s.value}</dd><dt className="truncate text-xs text-muted">{s.label}{s.hint ? ` · ${s.hint}` : ""}</dt></div>)}
       </dl>}

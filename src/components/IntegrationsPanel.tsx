@@ -44,8 +44,8 @@ function IntegrationDialog({ plugin, existing, onClose, onSaved }: { plugin: Plu
           <FieldForm fields={plugin.secrets} secretsSet={existing?.secrets} prefix="s" />
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="ignoreTls" defaultChecked={existing?.ignoreTls} /> Ignore TLS errors (self-signed certificates)</label>
-        <div className="flex items-center gap-2"><button type="button" className="btn" onClick={(e) => test(e.currentTarget.form!)}>Test connection</button><span role="status" className={`text-sm ${testMsg && !testMsg.ok ? "text-down" : "text-muted"}`}>{testMsg?.text}</span></div>
-        {err && <p role="alert" className="text-sm text-down">{err}</p>}
+        <div className="flex items-center gap-2"><button type="button" className="btn" onClick={(e) => test(e.currentTarget.form!)}>Test connection</button><span role="status" className={`text-sm ${testMsg && !testMsg.ok ? "text-down-fg" : "text-muted"}`}>{testMsg?.text}</span></div>
+        {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => ref.current?.close()}>Cancel</button><button className="btn btn-primary">Save</button></div>
       </form>
     </dialog>
@@ -71,7 +71,7 @@ export function IntegrationsPanel() {
         {list.map((i) => (
           <li key={i.id} className="flex items-center gap-3 py-2">
             <span className="min-w-0 flex-1"><span className="block truncate font-medium">{i.name}</span><span className="block truncate text-xs text-muted">{find(i.type)?.name ?? i.type} · {i.baseUrl}{i.lastError ? ` · ${i.lastError}` : ""}</span></span>
-            {i.lastError ? <span className="text-xs text-down">error</span> : i.lastOkAt ? <span className="text-xs text-ok">ok</span> : null}
+            {i.lastError ? <span className="text-xs text-down-fg">error</span> : i.lastOkAt ? <span className="text-xs text-ok-fg">ok</span> : null}
             <button className="btn !min-h-8 !px-2" aria-label={`Edit ${i.name}`} onClick={() => find(i.type) && setDlg({ plugin: find(i.type)!, existing: i })}><Pencil size={14} /></button>
             <button className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${i.name}`} onClick={async () => { if (await dialogs.confirm(`Delete ${i.name} and its widgets?`)) { await api(`/api/integrations/${i.id}`, { method: "DELETE" }); refresh(); } }}><Trash2 size={14} /></button>
           </li>

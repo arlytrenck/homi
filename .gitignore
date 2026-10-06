@@ -11,3 +11,5 @@ playwright-report
 *.tsbuildinfo
 .DS_Store
 .claude/
+.e2e-data
+.e2e-auth.json

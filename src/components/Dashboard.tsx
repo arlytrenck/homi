@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, closestCenter, useDroppable, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Activity, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
@@ -20,6 +20,12 @@ import { WidgetCard } from "./WidgetCard";
 import { WidgetDialog } from "./WidgetDialog";
 
 const UNGROUPED = "__none__";
+
+/** Prefer whatever is under the pointer (works for empty groups); fall back to overlap for keyboard drags. */
+const collision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  return hits.length ? hits : rectIntersection(args);
+};
 
 function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onEdit: () => void; onDelete: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: s.id, disabled: !edit });
@@ -69,8 +75,9 @@ function Section({ group, services, edit, onAdd, onEdit, onDelete, onRename, onR
         {edit && <button className="btn !min-h-7 !px-2 text-xs" onClick={onAdd}><Plus size={12} /> Service</button>}
       </div>
       <SortableContext items={services.map((s) => s.id)} strategy={rectSortingStrategy}>
-        <ul ref={setNodeRef} className="grid min-h-6 p-0" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,16rem),1fr))", gap: "var(--tile-gap)" }}>
+        <ul ref={setNodeRef} className={`grid p-0 ${edit && !services.length ? "min-h-14 items-center justify-items-center rounded-[10px] border border-dashed border-border text-sm text-muted" : "min-h-6"}`} style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,16rem),1fr))", gap: "var(--tile-gap)" }}>
           {services.map((s) => <Tile key={s.id} s={s} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} />)}
+          {edit && !services.length && <li className="list-none" aria-hidden>Drop services here</li>}
         </ul>
       </SortableContext>
     </section>
@@ -135,9 +142,13 @@ export function Dashboard() {
     const lists = new Map<string | null, string[]>([[null, []], ...groups.map((g) => [g.id, [] as string[]] as [string, string[]])]);
     for (const s of all) lists.get(s.groupId ?? null)?.push(s.id);
     const from = lists.get(a.groupId ?? null)!;
-    from.splice(from.indexOf(a.id), 1);
+    const fromIdx = from.indexOf(a.id);
     const to = lists.get(targetGroup)!;
-    const idx = overSvc ? to.indexOf(overSvc.id) : to.length;
+    const overIdxBefore = overSvc ? to.indexOf(overSvc.id) : -1;
+    from.splice(fromIdx, 1);
+    let idx = overSvc ? to.indexOf(overSvc.id) : to.length;
+    // Moving forward within the same group lands after the target (as in arrayMove), not before it.
+    if (overSvc && from === to && fromIdx < overIdxBefore) idx += 1;
     to.splice(idx < 0 ? to.length : idx, 0, a.id);
     const payload = { groups: [...lists.entries()].map(([id, serviceIds]) => ({ id, serviceIds })) };
     qc.setQueryData<DashboardDTO>(["dashboard"], { ...data, services: payload.groups.flatMap((g) => g.serviceIds.map((id) => ({ ...all.find((s) => s.id === id)!, groupId: g.id }))) });
@@ -147,7 +158,7 @@ export function Dashboard() {
   async function addGroup() { const name = await dlg.prompt("Group name"); if (name?.trim()) { await api("/api/groups", { method: "POST", body: { name: name.trim() } }); refresh(); } }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6">
+    <main className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6">
       <header className="mb-6 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto flex items-center gap-2 text-xl font-semibold"><BrandMark size={30} />{data.settings.title}</h1>
         <Clock />
@@ -175,7 +186,7 @@ export function Dashboard() {
         </section>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={collision} onDragEnd={onDragEnd}>
         {groups.map((g) => (
           <Section key={g.id} group={g} services={by(g.id)} edit={isEdit}
             onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })}
@@ -197,6 +208,6 @@ export function Dashboard() {
       {needle && !filtered.length && <p className="text-center text-muted">No matches for “{q}”.</p>}
       {wdialog && <WidgetDialog widget={wdialog.widget} onClose={() => setWdialog(null)} onSaved={() => { setWdialog(null); qc.invalidateQueries({ queryKey: ["widget"] }); refresh(); }} />}
       {dialog && <ServiceDialog service={dialog.service} groups={groups} defaultGroupId={dialog.groupId} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); refresh(); }} />}
-    </div>
+    </main>
   );
 }

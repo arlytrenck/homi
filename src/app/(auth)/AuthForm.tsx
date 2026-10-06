@@ -33,7 +33,7 @@ export function AuthForm({ mode, tokenRequired }: { mode: "login" | "setup"; tok
         <div><label className="label" htmlFor="username">Username</label><input id="username" name="username" className="input" autoComplete="username" required minLength={mode === "setup" ? 3 : 1} autoFocus /></div>
         <div><label className="label" htmlFor="password">Password{mode === "setup" && " (min. 10 characters)"}</label><input id="password" name="password" type="password" className="input" autoComplete={mode === "setup" ? "new-password" : "current-password"} required minLength={mode === "setup" ? 10 : 1} /></div>
         {mode === "setup" && tokenRequired && <div><label className="label" htmlFor="setupToken">Setup token</label><input id="setupToken" name="setupToken" className="input" required /></div>}
-        {err && <p role="alert" className="text-sm text-down">{err}</p>}
+        {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <button className="btn btn-primary w-full" disabled={busy}>{busy ? "Please wait…" : mode === "setup" ? "Create account" : "Sign in"}</button>
       </form>
     </main>
