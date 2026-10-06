@@ -106,17 +106,30 @@ section[id]{scroll-margin-top:68px}
 @media(max-width:700px){nav a.link{display:none}}
 
 /* hero */
-.hero{padding-top:56px;padding-bottom:72px;overflow:hidden}
-.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);pointer-events:none}
-.hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:32px;align-items:center;position:relative}
-@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
-.hero-wm{width:min(100%,380px);height:auto;display:block;margin-bottom:28px;margin-left:-6px}
-.eyebrow{font:500 .82rem var(--mono);color:var(--teal-text);margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap}
-.eyebrow i{font-style:normal;color:var(--muted)}
-.hero h1{max-width:13ch}
-.hero .lead{margin-top:22px}
-.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}
-.meta{margin-top:22px;font:400 .8rem var(--mono);color:var(--muted)}
+.hero{padding-top:48px;padding-bottom:40px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 22%,#000 15%,transparent 75%);mask-image:radial-gradient(ellipse 60% 55% at 50% 22%,#000 15%,transparent 75%);pointer-events:none}
+.hero .wrap{position:relative}
+.hero-top{display:flex;flex-direction:column;align-items:center;text-align:center}
+.release{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 14px 6px 12px;font:500 .8rem var(--sans);color:var(--text);text-decoration:none;transition:border-color .15s,transform .2s var(--ease)}
+.release:hover{border-color:var(--muted);transform:translateY(-1px)}
+.release i{width:8px;height:8px;border-radius:50%;background:var(--up)}
+.release em{font-style:normal;color:var(--muted);padding-left:10px;border-left:1px solid var(--border)}
+.release svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hero-wm{width:min(78vw,460px);height:auto;display:block;margin:22px 0 4px}
+.hero h1{font-size:clamp(1.5rem,3.2vw,2.3rem);font-weight:500;letter-spacing:-.02em;color:var(--text)}
+.hero .lead{margin:18px auto 0;text-align:center}
+.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:32px}
+.cmd{margin-top:22px;display:inline-flex;align-items:center;gap:12px;min-height:44px;padding:0 8px 0 16px;border:1px dashed var(--border);border-radius:8px;background:transparent;color:var(--muted);font:400 .85rem var(--mono);cursor:pointer;transition:border-color .15s,color .15s}
+.cmd:hover{border-color:var(--muted);color:var(--text)}
+.cmd .p{color:var(--teal-text)}.cmd code{font:inherit}
+.cmd .cp{font:500 .72rem var(--sans);border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface)}
+.stage{position:relative;margin-top:64px;perspective:1600px}
+.stage .mock{margin-top:0;transform:rotateX(var(--tilt,8deg)) translateY(var(--ty,0));transform-origin:50% 0;transition:transform .12s linear;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)}
+.stage::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:120px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+.float-chip{position:absolute;z-index:2;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font:500 .8rem var(--mono);box-shadow:var(--shadow);animation:bob 6s ease-in-out infinite}
+.float-chip b{font-weight:400;color:var(--muted);font-size:.74rem}
+.fc1{left:-28px;top:-26px}.fc2{right:-22px;top:-14px;animation-delay:-2s}.fc3{left:-18px;top:300px;animation-delay:-4s}
+@media(max-width:1180px){.float-chip{display:none}}
 
 /* wordmark animation */
 .wm-hm{opacity:0;transform:translateX(-14px);animation:wmIn .9s var(--ease) .1s forwards}
@@ -328,8 +341,9 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
 
 <main id="top">
 <section class="hero">
-  <div class="wrap hero-grid">
-    <div>
+  <div class="wrap">
+    <div class="hero-top">
+      <a class="release rv" href="https://github.com/arlytrenck/homi/blob/main/CHANGELOG.md"><i class="pulse"></i><span>v0.1.0 is out</span><em>See what is new</em><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#arrow"/></svg></a>
       <svg class="hero-wm" viewBox="0 12 230 100" role="img" aria-label="homi">
         <text class="wm-hm" x="15" y="100" font-family="Inter,'SF Pro Display','Helvetica Neue',Arial,sans-serif" font-size="88" font-weight="700" letter-spacing="-3" textLength="174" lengthAdjust="spacingAndGlyphs" fill="url(#wm)">hom</text>
         <rect class="wm-stem" x="193" y="54" width="12" height="46" rx="3" fill="url(#wm)"/>
@@ -337,52 +351,20 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
         <circle class="wm-dot d1" cx="199" cy="38" r="12" style="fill:var(--dot)" fill-opacity=".18"/>
         <circle class="wm-dot d1" cx="199" cy="38" r="6" style="fill:var(--dot)"/>
       </svg>
-      <div class="eyebrow mono">self-hosted <i>/</i> at a glance <i>/</i> yours</div>
-      <h1>A dashboard for your <span class="grad">homelab.</span></h1>
-      <p class="lead">A calm window onto your own infrastructure. Launch your services, see what is up, and get out of the way. One container, one SQLite file, no external database.</p>
-      <div class="cta">
+      <h1 class="rv" style="--i:1">A dashboard for your homelab.</h1>
+      <p class="lead rv" style="--i:2">A calm window onto your own infrastructure. Launch your services, see what is up, and get out of the way. One container, one SQLite file, no external database.</p>
+      <div class="cta rv" style="--i:3">
         <a class="btn primary" href="#start">Get started <svg viewBox="0 0 24 24"><use href="#arrow"/></svg></a>
         <a class="btn" href="https://github.com/arlytrenck/homi">View on GitHub</a>
       </div>
-      <p class="meta">v0.1.0 · MIT licensed · amd64 and arm64</p>
+      <button class="cmd rv" id="cmdchip" type="button" style="--i:4" aria-label="Copy docker compose command"><span class="p">$</span><code>docker compose up -d</code><span class="cp" id="cmdtxt">Copy</span></button>
     </div>
 
-    <!-- hub illustration: services around the home mark -->
-    <svg class="hub" viewBox="0 0 400 400" role="img" aria-label="Services connected to the Homi mark, each with a live status">
-      <g id="links">
-        <path class="link" d="M200 205 L82 78"/><path class="link" d="M200 205 L318 78"/>
-        <path class="link" d="M200 205 L48 205"/><path class="link" d="M200 205 L352 205"/>
-        <path class="link" d="M200 205 L82 332"/><path class="link" d="M200 205 L318 332"/>
-        <path class="flow" d="M200 205 L82 78"/><path class="flow" d="M318 78 L200 205" style="animation-delay:1.7s,1.9s"/>
-        <path class="flow" d="M200 205 L48 205" style="animation-delay:1.7s,2.1s"/><path class="flow" d="M352 205 L200 205" style="animation-delay:1.7s,1.5s"/>
-        <path class="flow" d="M200 205 L82 332" style="animation-delay:1.7s,2.3s"/><path class="flow" d="M318 332 L200 205" style="animation-delay:1.7s,1.8s"/>
-      </g>
-      <g transform="translate(200 200) scale(1.55) translate(-60 -56)">
-        <path class="house" pathLength="1" d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-        <g class="core"><circle cx="60" cy="67" r="11" style="fill:var(--dot)" fill-opacity=".18"/><circle class="ripple" cx="60" cy="67" r="11" style="fill:var(--dot)" fill-opacity=".35"/><circle cx="60" cy="67" r="5.5" style="fill:var(--dot)"/></g>
-      </g>
-      <g class="node" style="--n:0"><g class="float" style="--n:0"><g transform="translate(82 78)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">proxmox</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-      <g class="node" style="--n:1"><g class="float" style="--n:1"><g transform="translate(318 78)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">pi-hole</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-      <g class="node" style="--n:2"><g class="float" style="--n:2"><g transform="translate(58 205)"><rect x="-48" y="-18" width="96" height="36" rx="8"/><text x="-34" y="4">grafana</text><svg x="26" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-      <g class="node" style="--n:3"><g class="float" style="--n:3"><g transform="translate(342 205)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">jellyfin</text>
-        <svg class="alt1" x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="wn" href="#tri"/></svg>
-        <svg class="alt2" x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-      <g class="node" style="--n:4"><g class="float" style="--n:4"><g transform="translate(82 332)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">nextcloud</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-      <g class="node" style="--n:5"><g class="float" style="--n:5"><g transform="translate(318 332)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">immich</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
-    </svg>
-  </div>
-</section>
-
-<section style="padding-top:0">
-  <div class="wrap">
-    <div class="stats rv">
-      <div class="stat"><b data-to="18" data-suf="">0</b><span>widgets and integrations</span></div>
-      <div class="stat"><b data-to="3" data-suf="">0</b><span>check types: http, tcp, ping</span></div>
-      <div class="stat"><b data-to="90" data-suf=" d">0</b><span>of uptime history</span></div>
-      <div class="stat"><b data-to="1" data-suf="">0</b><span>container, one SQLite file</span></div>
-    </div>
-
-    <div class="mock rv" role="img" aria-label="Example Homi dashboard showing grouped services with status and uptime history">
+    <div class="stage">
+      <div class="float-chip fc1"><span class="st up"><svg><use href="#ck"/></svg>proxmox</span><b>12 ms</b></div>
+      <div class="float-chip fc2"><span class="st warn"><svg><use href="#tri"/></svg>jellyfin</span><b>1.8 s</b></div>
+      <div class="float-chip fc3"><span class="st up"><svg><use href="#ck"/></svg>pi-hole</span><b>4 ms</b></div>
+    <div class="mock" id="mock" role="img" aria-label="Example Homi dashboard showing grouped services with status and uptime history">
       <div class="mock-bar">
         <span class="dots"><i></i><i></i><i></i></span>
         <svg width="18" height="18" viewBox="18 18 84 84" aria-hidden="true"><path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="67" r="5.5" style="fill:var(--dot)" class="pulse"/></svg>
@@ -394,6 +376,19 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
         <div><div class="group-title">Media</div><div class="cards" id="cards-b"></div></div>
       </div>
     </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:24px;padding-bottom:40px">
+  <div class="wrap">
+    <div class="stats rv">
+      <div class="stat"><b data-to="18" data-suf="">0</b><span>widgets and integrations</span></div>
+      <div class="stat"><b data-to="3" data-suf="">0</b><span>check types: http, tcp, ping</span></div>
+      <div class="stat"><b data-to="90" data-suf=" d">0</b><span>of uptime history</span></div>
+      <div class="stat"><b data-to="1" data-suf="">0</b><span>container, one SQLite file</span></div>
+    </div>
+
   </div>
 </section>
 
@@ -549,6 +544,17 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
     },1600);
   }
 
+
+  var mockEl=document.getElementById('mock');
+  if(mockEl&&!reduce){
+    var tick=false;
+    function tilt(){tick=false;var r=mockEl.getBoundingClientRect(),p=Math.max(0,Math.min(1,(innerHeight-r.top)/(innerHeight*.9)));mockEl.style.setProperty('--tilt',(8*(1-p)).toFixed(2)+'deg')}
+    addEventListener('scroll',function(){if(!tick){tick=true;requestAnimationFrame(tilt)}},{passive:true});tilt();
+  }else if(mockEl){mockEl.style.setProperty('--tilt','0deg')}
+  document.getElementById('cmdchip').addEventListener('click',function(){
+    var t=document.getElementById('cmdtxt');
+    if(navigator.clipboard)navigator.clipboard.writeText('docker compose up -d').then(function(){t.textContent='Copied';setTimeout(function(){t.textContent='Copy'},1500)},function(){});
+  });
   /* scroll reveal + triggers */
   function countUp(el){
     var to=+el.dataset.to,suf=el.dataset.suf||'',t0=performance.now();
