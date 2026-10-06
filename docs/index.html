@@ -66,8 +66,9 @@ h3{font-size:1rem;font-weight:500;letter-spacing:0}
 header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s}
 header.scrolled{border-bottom-color:var(--border);background:color-mix(in srgb,var(--bg) 92%,transparent)}
 nav{display:flex;align-items:center;gap:20px;min-height:68px}
-nav .brand{display:flex;align-items:center;margin-right:auto;border-radius:8px;transition:opacity .15s}
-nav .brand:hover{opacity:.8}
+nav .brand{display:flex;align-items:center;margin-right:auto;border-radius:11px}
+nav .brand svg{border-radius:11px;box-shadow:0 0 0 1px var(--border);transition:transform .35s var(--ease)}
+nav .brand:hover svg{transform:translateY(-2px) rotate(-4deg)}
 nav .brand svg{width:auto;display:block}
 .links{display:flex;gap:4px;position:absolute;left:50%;transform:translateX(-50%)}
 .links .link{color:var(--muted);text-decoration:none;font-weight:500;font-size:.9rem;padding:8px 14px;border-radius:8px;transition:color .15s,background .15s}
@@ -267,6 +268,8 @@ footer a:hover{color:var(--text)}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="28" y1="32" x2="92" y2="88"><stop offset="0" style="stop-color:var(--brand-a)"/><stop offset="1" style="stop-color:var(--brand-b)"/></linearGradient>
+    <linearGradient id="tb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0b1020"/></linearGradient>
+    <linearGradient id="gt" gradientUnits="userSpaceOnUse" x1="28" y1="32" x2="92" y2="88"><stop offset="0" stop-color="#2dd4bf"/><stop offset="1" stop-color="#6366f1"/></linearGradient>
     <linearGradient id="wm" gradientUnits="userSpaceOnUse" x1="15" y1="0" x2="205" y2="0"><stop offset="0" style="stop-color:var(--brand-a)"/><stop offset="1" style="stop-color:var(--brand-b)"/></linearGradient>
     <symbol id="ck" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="tri" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
@@ -284,7 +287,7 @@ footer a:hover{color:var(--text)}
 
 <header id="hdr">
   <nav class="wrap" aria-label="Main">
-    <a class="brand" href="#top" aria-label="Homi home"><svg viewBox="0 12 230 100" aria-hidden="true" style="height:40px"><use href="#wordmark" x="0" y="12" width="230" height="100"/></svg></a>
+    <a class="brand" href="#top" aria-label="Homi home"><svg viewBox="0 0 120 120" width="42" height="42" aria-hidden="true"><rect x=".5" y=".5" width="119" height="119" rx="27.5" fill="url(#tb)" stroke="#334155" stroke-opacity=".7"/><path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="67" r="11" fill="#2dd4bf" fill-opacity=".18"/><circle cx="60" cy="67" r="5.5" fill="#2dd4bf"/></svg></a>
     <div class="links" id="links">
       <a class="link" href="#features">Features</a>
       <a class="link" href="#ops">Ops view</a>
@@ -457,7 +460,7 @@ footer a:hover{color:var(--text)}
   <div class="wrap">
     <svg class="foot-wm rv" viewBox="0 12 230 100" role="img" aria-label="homi"><use href="#wordmark" x="0" y="12" width="230" height="100"/></svg>
     <div class="row">
-      <span>A dashboard for your homelab. MIT licensed.</span>
+      <span>© 2026 Arly Trenck. All rights reserved.<br><span style="font-size:.8rem">Site design and brand assets are reserved. The Homi software is MIT licensed.</span></span>
       <div class="links">
         <a href="https://github.com/arlytrenck/homi">GitHub</a>
         <a href="https://github.com/arlytrenck/homi/blob/main/CHANGELOG.md">Changelog</a>
