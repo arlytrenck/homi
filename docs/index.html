@@ -421,6 +421,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
       <div class="tile rv" style="--i:3"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Secure by default</h3><p>Argon2id passwords, hashed sessions, CSRF checks, login rate limiting, SSRF-guarded requests, AES-256-GCM for stored secrets.</p></div>
       <div class="tile rv" style="--i:4"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h3>Backup and restore</h3><p>YAML export and import with a dry-run preview. Your whole setup in one file.</p></div>
       <div class="tile rv" style="--i:5"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div><h3>Installable</h3><p>PWA manifest, light and dark themes, and touch targets sized for phones. Multi-arch image for amd64 and arm64.</p></div>
+      <div class="tile rv" style="--i:6"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Plugin API</h3><p>Add your own widgets and integrations with a small, documented plugin API. Built-in weather, notes, bookmarks and host stats show how.</p></div>
     </div>
   </div>
 </section>
@@ -534,8 +535,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
   function render(id,list){
     document.getElementById(id).innerHTML=list.map(function(r){
       var s=S[r[3]];
-      return '<div class="card"><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ico[r[2]]+'</svg></div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div>
-      <div class="tile rv" style="--i:6"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>Plugin API</h3><p>Add your own widgets and integrations with a small, documented plugin API. Built-in weather, notes, bookmarks and host stats show how.</p></div></div>';
+      return '<div class="card"><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ico[r[2]]+'</svg></div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div></div>';
     }).join('');
   }
   render('cards-a',A);render('cards-b',B);
