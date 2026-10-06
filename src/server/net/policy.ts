@@ -17,12 +17,12 @@ export function blockedReason(ip: string, policy: IpPolicy): string | null {
     if (a === 0) return "unspecified address";
     if (a === 169 && b === 254) return "link-local / cloud metadata address";
     if (a >= 224) return "multicast/reserved address";
-    if (a === 127 && !policy.allowLoopback) return "loopback address (enable allowLoopback in settings)";
+    if (a === 127 && !policy.allowLoopback) return "loopback address (enable “Allow checks against loopback” in Settings)";
     return null;
   }
   if (net.isIPv6(ip)) {
     if (lower === "::") return "unspecified address";
-    if (lower === "::1") return policy.allowLoopback ? null : "loopback address (enable allowLoopback in settings)";
+    if (lower === "::1") return policy.allowLoopback ? null : "loopback address (enable “Allow checks against loopback” in Settings)";
     if (/^fe[89ab]/.test(lower)) return "link-local address";
     if (lower.startsWith("ff")) return "multicast address";
     return null;

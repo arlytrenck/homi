@@ -1,6 +1,6 @@
 import os from "node:os";
 import fs from "node:fs/promises";
-import { bytes, clamp01, defineCoreWidget, duration, pct } from "../sdk";
+import { bytes, clamp01, defineCoreWidget, duration } from "../sdk";
 
 const WMO: Record<number, string> = { 0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Fog", 51: "Drizzle", 53: "Drizzle", 55: "Drizzle", 61: "Rain", 63: "Rain", 65: "Heavy rain", 71: "Snow", 73: "Snow", 75: "Heavy snow", 80: "Showers", 81: "Showers", 82: "Heavy showers", 95: "Thunderstorm" };
 
@@ -41,7 +41,7 @@ export const hoststats = defineCoreWidget({
   async fetch(_c, o) {
     const cpus = os.cpus().length, load = os.loadavg()[0] / cpus;
     const total = os.totalmem(), used = total - os.freemem();
-    const meters = [{ label: "CPU load", value: clamp01(load), text: pct(load * 100) }, { label: "Memory", value: clamp01(used / total), text: `${bytes(used)} / ${bytes(total)}` }];
+    const meters = [{ label: "Load (1 min)", value: clamp01(load), text: `${os.loadavg()[0].toFixed(2)} on ${cpus} cores` }, { label: "Memory", value: clamp01(used / total), text: `${bytes(used)} / ${bytes(total)}` }];
     try { const s = await fs.statfs(String(o.path || "/")); const t = s.blocks * s.bsize, u = t - s.bfree * s.bsize; meters.push({ label: `Disk ${o.path || "/"}`, value: clamp01(u / t), text: `${bytes(u)} / ${bytes(t)}` }); } catch { /* path unavailable */ }
     return { meters, note: `${os.hostname()} · up ${duration(os.uptime())} · inside the container unless /proc and disks are mounted` };
   },

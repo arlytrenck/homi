@@ -10,7 +10,7 @@ const TONE_BG = { ok: "bg-ok", warn: "bg-warn", down: "bg-down", neutral: "bg-un
 export function WidgetCard({ w, edit, onEdit, onDelete }: { w: WidgetDTO; edit: boolean; onEdit: () => void; onDelete: () => void }) {
   const { data, isLoading } = useQuery({ queryKey: ["widget", w.id, w.options], queryFn: () => api<WidgetData>(`/api/widgets/${w.id}/data`), refetchInterval: 30_000, staleTime: 10_000 });
   const d = data?.data;
-  const title = w.title || w.integrationName || w.kind;
+  const title = w.title || w.integrationName || w.kindTitle;
   return (
     <section aria-label={title} className={`card flex flex-col gap-2 p-3 ${w.size === "lg" ? "sm:col-span-2" : ""}`}>
       <header className="flex items-center gap-2 text-xs text-muted">

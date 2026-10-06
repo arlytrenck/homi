@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import type { IntegrationDTO, PluginDTO, PluginsResponse } from "@/lib/types";
 import { FieldForm, readFields } from "./FieldForm";
+import { useDialogs } from "./Dialogs";
 
 function IntegrationDialog({ plugin, existing, onClose, onSaved }: { plugin: PluginDTO; existing: IntegrationDTO | null; onClose: () => void; onSaved: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -52,6 +53,7 @@ function IntegrationDialog({ plugin, existing, onClose, onSaved }: { plugin: Plu
 }
 
 export function IntegrationsPanel() {
+  const dialogs = useDialogs();
   const qc = useQueryClient();
   const plugins = useQuery({ queryKey: ["plugins"], queryFn: () => api<PluginsResponse>("/api/plugins"), staleTime: Infinity });
   const ints = useQuery({ queryKey: ["integrations"], queryFn: () => api<{ integrations: IntegrationDTO[] }>("/api/integrations") });
@@ -71,7 +73,7 @@ export function IntegrationsPanel() {
             <span className="min-w-0 flex-1"><span className="block truncate font-medium">{i.name}</span><span className="block truncate text-xs text-muted">{find(i.type)?.name ?? i.type} · {i.baseUrl}{i.lastError ? ` · ${i.lastError}` : ""}</span></span>
             {i.lastError ? <span className="text-xs text-down">error</span> : i.lastOkAt ? <span className="text-xs text-ok">ok</span> : null}
             <button className="btn !min-h-8 !px-2" aria-label={`Edit ${i.name}`} onClick={() => find(i.type) && setDlg({ plugin: find(i.type)!, existing: i })}><Pencil size={14} /></button>
-            <button className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${i.name}`} onClick={async () => { if (confirm(`Delete ${i.name} and its widgets?`)) { await api(`/api/integrations/${i.id}`, { method: "DELETE" }); refresh(); } }}><Trash2 size={14} /></button>
+            <button className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${i.name}`} onClick={async () => { if (await dialogs.confirm(`Delete ${i.name} and its widgets?`)) { await api(`/api/integrations/${i.id}`, { method: "DELETE" }); refresh(); } }}><Trash2 size={14} /></button>
           </li>
         ))}
         {!list.length && <li className="py-2 text-sm text-muted">No integrations yet.</li>}

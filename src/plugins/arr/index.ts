@@ -2,9 +2,9 @@ import { definePlugin, num, type IntegrationPlugin, type IntegrationContext } fr
 
 const get = <T = any>(ctx: IntegrationContext, v: string, p: string) => ctx.json<T>(`/api/${v}${p}`, { headers: { "x-api-key": ctx.secrets.apiKey } });
 
-function arr(id: string, name: string, icon: string, v: "v3" | "v1", wantedLabel: string, calendar?: (ctx: IntegrationContext) => Promise<string | undefined>): IntegrationPlugin {
+function arr(id: string, name: string, icon: string, v: "v3" | "v1", wantedLabel: string, port: number, calendar?: (ctx: IntegrationContext) => Promise<string | undefined>): IntegrationPlugin {
   return definePlugin({
-    id, name, icon, description: `${name} queue, backlog and health.`, baseUrlPlaceholder: "http://192.168.1.4:8989",
+    id, name, icon, description: `${name} queue, backlog and health.`, baseUrlPlaceholder: `http://192.168.1.4:${port}`,
     secrets: { apiKey: { kind: "secret", label: "API key (Settings > General)", required: true } },
     async test(ctx) { try { const s = await get(ctx, v, "/system/status"); return { ok: true, version: s.version }; } catch (e) { return { ok: false, error: (e as Error).message }; } },
     widgets: [{
@@ -32,14 +32,14 @@ function arr(id: string, name: string, icon: string, v: "v3" | "v1", wantedLabel
 
 const soon = (days = 7) => { const a = new Date(), b = new Date(Date.now() + days * 864e5); return `start=${a.toISOString()}&end=${b.toISOString()}`; };
 
-export const sonarr = arr("sonarr", "Sonarr", "tv", "v3", "Missing", async (ctx) => {
+export const sonarr = arr("sonarr", "Sonarr", "tv", "v3", "Missing", 8989, async (ctx) => {
   const c = await get<any[]>(ctx, "v3", `/calendar?${soon()}&includeSeries=true`);
   const e = c.sort((x, y) => String(x.airDateUtc).localeCompare(String(y.airDateUtc)))[0];
   return e ? `${e.series?.title ?? "Episode"} S${String(e.seasonNumber).padStart(2, "0")}E${String(e.episodeNumber).padStart(2, "0")}` : undefined;
 });
-export const radarr = arr("radarr", "Radarr", "film", "v3", "Missing", async (ctx) => {
+export const radarr = arr("radarr", "Radarr", "film", "v3", "Missing", 7878, async (ctx) => {
   const c = await get<any[]>(ctx, "v3", `/calendar?${soon(30)}`);
   return c[0]?.title;
 });
-export const lidarr = arr("lidarr", "Lidarr", "music", "v1", "Missing");
-export const prowlarr = arr("prowlarr", "Prowlarr", "search", "v1", "");
+export const lidarr = arr("lidarr", "Lidarr", "music", "v1", "Missing", 8686);
+export const prowlarr = arr("prowlarr", "Prowlarr", "search", "v1", "", 9696);

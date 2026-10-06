@@ -11,7 +11,7 @@ export interface GroupDTO { id: string; name: string; icon: string | null; colla
 export interface DashboardDTO { groups: GroupDTO[]; services: ServiceDTO[]; widgets: WidgetDTO[]; settings: { title: string; theme: string }; viewer: "admin" | "public" }
 
 export interface WidgetDTO {
-  id: string; kind: string; title: string | null; size: "sm" | "md" | "lg"; area: "header" | "main" | "sidebar";
+  id: string; kind: string; kindTitle: string; title: string | null; size: "sm" | "md" | "lg"; area: "header" | "main" | "sidebar";
   hiddenPublic: boolean; integrationId: string | null; integrationName: string | null; options?: Record<string, any>;
 }
 export type FieldSpecDTO =

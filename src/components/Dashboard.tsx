@@ -10,6 +10,7 @@ import { Activity, Container, GripVertical, Moon, Pencil, Plus, Search, Settings
 import { api } from "@/lib/api-client";
 import type { DashboardDTO, GroupDTO, ServiceDTO, Status, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
+import { useDialogs } from "./Dialogs";
 import { StatusDot } from "./StatusDot";
 import { ServiceIcon } from "./ServiceIcon";
 import { ServiceDialog } from "./ServiceDialog";
@@ -26,7 +27,7 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
   const body = (
     <>
       <ServiceIcon icon={s.icon} name={s.name} />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-[5rem] flex-1">
         <span className="block truncate font-medium" style={{ fontSize: "var(--text-tile)" }}>{s.name}</span>
         {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
@@ -38,7 +39,7 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }} className="relative list-none">
       {edit ? (
-        <div className={cls} style={{ padding: "var(--tile-pad)" }}>
+        <div className={`${cls} flex-wrap`} style={{ padding: "var(--tile-pad)" }}>
           <button {...attributes} {...listeners} className="touch-none cursor-grab text-muted" aria-label={`Drag ${s.name}`}><GripVertical size={16} /></button>
           {body}
           <button onClick={onEdit} className="btn !min-h-8 !px-2" aria-label={`Edit ${s.name}`}><Pencil size={14} /></button>
@@ -60,7 +61,7 @@ function Section({ group, services, edit, onAdd, onEdit, onDelete, onRename, onR
   const down = services.filter((s) => s.status?.status === "down").length;
   return (
     <section aria-labelledby={`g-${id}`} className="mb-8">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 id={`g-${id}`} className="text-sm font-semibold uppercase tracking-wide text-muted">{group?.name ?? "Ungrouped"}</h2>
         {down > 0 && <span className="rounded-full bg-down px-2 text-xs text-white">{down} down</span>}
         {edit && group && <><button className="btn !min-h-7 !px-2 text-xs" onClick={onRename}><Pencil size={12} /> Rename</button><button className="btn btn-danger !min-h-7 !px-2 text-xs" onClick={onRemove}><Trash2 size={12} /></button></>}
@@ -77,6 +78,7 @@ function Section({ group, services, edit, onAdd, onEdit, onDelete, onRename, onR
 
 export function Dashboard() {
   const viewer = useViewer();
+  const dlg = useDialogs();
   const router = useRouter();
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard") });
@@ -141,7 +143,7 @@ export function Dashboard() {
     await api("/api/layout", { method: "PUT", body: payload }).catch(refresh);
   }
 
-  async function addGroup() { const name = prompt("Group name"); if (name?.trim()) { await api("/api/groups", { method: "POST", body: { name: name.trim() } }); refresh(); } }
+  async function addGroup() { const name = await dlg.prompt("Group name"); if (name?.trim()) { await api("/api/groups", { method: "POST", body: { name: name.trim() } }); refresh(); } }
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6">
@@ -166,7 +168,7 @@ export function Dashboard() {
       {(data.widgets.length > 0 || isEdit) && (
         <section aria-label="Widgets" className="mb-8">
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,17rem),1fr))" }}>
-            {data.widgets.map((w) => <WidgetCard key={w.id} w={w} edit={isEdit} onEdit={() => setWdialog({ widget: w })} onDelete={async () => { if (confirm("Delete this widget?")) { await api(`/api/widgets/${w.id}`, { method: "DELETE" }); refresh(); } }} />)}
+            {data.widgets.map((w) => <WidgetCard key={w.id} w={w} edit={isEdit} onEdit={() => setWdialog({ widget: w })} onDelete={async () => { if (await dlg.confirm("Delete this widget?")) { await api(`/api/widgets/${w.id}`, { method: "DELETE" }); refresh(); } }} />)}
             {isEdit && <button className="card grid min-h-20 place-items-center border-dashed text-sm text-muted hover:border-accent" onClick={() => setWdialog({ widget: null })}><span className="flex items-center gap-1"><Plus size={14} /> Add widget</span></button>}
           </div>
         </section>
@@ -176,16 +178,16 @@ export function Dashboard() {
         {groups.map((g) => (
           <Section key={g.id} group={g} services={by(g.id)} edit={isEdit}
             onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })}
-            onDelete={async (s) => { if (confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }}
-            onRename={async () => { const name = prompt("Rename group", g.name); if (name?.trim()) { await api(`/api/groups/${g.id}`, { method: "PATCH", body: { name: name.trim() } }); refresh(); } }}
-            onRemove={async () => { if (confirm(`Delete group "${g.name}"? Its services become ungrouped.`)) { await api(`/api/groups/${g.id}`, { method: "DELETE" }); refresh(); } }} />
+            onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }}
+            onRename={async () => { const name = await dlg.prompt("Rename group", g.name); if (name?.trim()) { await api(`/api/groups/${g.id}`, { method: "PATCH", body: { name: name.trim() } }); refresh(); } }}
+            onRemove={async () => { if (await dlg.confirm(`Delete group "${g.name}"? Its services become ungrouped.`)) { await api(`/api/groups/${g.id}`, { method: "DELETE" }); refresh(); } }} />
         ))}
         <Section group={null} services={by(null)} edit={isEdit} onAdd={() => setDialog({ service: null })} onEdit={(s) => setDialog({ service: s })}
-          onDelete={async (s) => { if (confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }} />
+          onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }} />
       </DndContext>
 
       {isEdit && <button className="btn" onClick={addGroup}><Plus size={16} /> Add group</button>}
-      {!data.services.length && !groups.length && (
+      {!data.services.length && !groups.length && !isEdit && (
         <div className="card mx-auto mt-16 max-w-md p-8 text-center">
           <h2 className="text-lg font-semibold">Nothing here yet</h2>
           <p className="mt-1 text-sm text-muted">{viewer === "admin" ? "Click Edit, then add a group and your first service." : "Sign in to add services."}</p>

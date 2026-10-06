@@ -3,6 +3,7 @@ import { eq, asc, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { groups, services, checks, widgets, integrations } from "@/server/db/schema";
 import { newId } from "@/server/auth/session";
+import { widgetRegistry } from "@/plugins/registry";
 import { publish } from "@/server/events/hub";
 import { getScheduler } from "@/server/scheduler/scheduler";
 import type { ServiceInput } from "@/lib/schemas";
@@ -35,7 +36,7 @@ export function dashboardData(opts: { publicOnly: boolean }) {
   const ws = db.select().from(widgets).orderBy(asc(widgets.sort)).all().filter((w) => !opts.publicOnly || !w.hiddenPublic);
   const ints = new Map(db.select({ id: integrations.id, name: integrations.name }).from(integrations).all().map((i) => [i.id, i.name]));
   return {
-    widgets: ws.map((w) => ({ id: w.id, kind: w.kind, title: w.title, size: w.size, area: w.area, hiddenPublic: w.hiddenPublic, integrationId: w.integrationId, integrationName: w.integrationId ? ints.get(w.integrationId) ?? null : null, ...(opts.publicOnly ? {} : { options: w.options }) })),
+    widgets: ws.map((w) => ({ id: w.id, kind: w.kind, kindTitle: widgetRegistry[w.kind]?.title ?? w.kind, title: w.title, size: w.size, area: w.area, hiddenPublic: w.hiddenPublic, integrationId: w.integrationId, integrationName: w.integrationId ? ints.get(w.integrationId) ?? null : null, ...(opts.publicOnly ? {} : { options: w.options }) })),
     groups: gs.map((g) => ({ id: g.id, name: g.name, icon: g.icon, collapsed: g.collapsed })),
     services: ss.map((s) => {
       const c = byService.get(s.id);
