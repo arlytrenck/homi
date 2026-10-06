@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { enterEditMode, openDashboard } from "./helpers";
+import { dumpWidgetDiagnostics, enterEditMode, openDashboard } from "./helpers";
 
 const KEY = "e2e-sonarr-key";
+
+test.afterEach(async ({ page }, testInfo) => dumpWidgetDiagnostics(page, testInfo));
 
 test("connect Sonarr from settings: bad key fails, good key connects, secret is never shown again", async ({ page }) => {
   await page.goto("/settings");

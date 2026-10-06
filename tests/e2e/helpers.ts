@@ -31,3 +31,17 @@ export async function addService(page: Page, o: { group?: string; name: string; 
   await dlg.getByRole("button", { name: "Save" }).click();
   await expect(dlg).toBeHidden();
 }
+
+/** On failure, print the visible page text and each widget's API response so CI logs explain the failure. */
+export async function dumpWidgetDiagnostics(page: Page, testInfo: { status?: string; expectedStatus?: string }) {
+  if (testInfo.status === testInfo.expectedStatus) return;
+  try {
+    console.log("DIAG node:", process.version);
+    console.log("DIAG page text:", (await page.locator("main").innerText({ timeout: 2000 }).catch(() => "(no main)")).slice(0, 600).replace(/\n+/g, " | "));
+    const dash = await (await page.request.get("/api/dashboard")).json();
+    for (const w of dash.widgets ?? []) {
+      const r = await page.request.get(`/api/widgets/${w.id}/data?refresh=1`);
+      console.log(`DIAG widget ${w.kind} (${w.id}) -> ${r.status()}`, (await r.text()).slice(0, 400));
+    }
+  } catch (e) { console.log("DIAG failed:", String(e).slice(0, 200)); }
+}

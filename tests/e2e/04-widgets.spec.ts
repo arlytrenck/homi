@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { enterEditMode, openDashboard } from "./helpers";
+import { dumpWidgetDiagnostics, enterEditMode, openDashboard } from "./helpers";
+
+test.afterEach(async ({ page }, testInfo) => dumpWidgetDiagnostics(page, testInfo));
 
 test("add a notes widget, see its text, edit it, delete it", async ({ page }) => {
   await openDashboard(page);
