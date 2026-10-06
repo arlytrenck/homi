@@ -2,7 +2,7 @@
 
 Add an integration under **Settings → Integrations**, press **Test connection**, then add its widgets from the dashboard (**Edit → Add widget**). Secrets are encrypted at rest and are never returned by the API; leave a secret field blank when editing to keep the saved value.
 
-> **Verification status.** Every integration is covered by automated tests against mock servers written from each product's public API documentation. They have **not** yet been verified against live instances, and vendors change APIs between versions. If a widget misbehaves, the error is shown on the card and in the integration list; please open an issue with the product version.
+> Verification status: every integration is covered by automated tests against mock servers written from each product's public API documentation. They have not yet been verified against live instances, and vendors change APIs between versions. If a widget misbehaves, the error is shown on the card and in the integration list; open an issue with the product version.
 
 Use a dedicated, least-privilege account or token for each one. Enable **Ignore TLS errors** for self-signed certificates.
 
