@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homi: a dashboard for your homelab</title>
+<meta name="description" content="Homi is a self-hostable homelab dashboard: a fast launcher for your services, with live health checks and uptime history. One container, one SQLite file.">
+<meta name="theme-color" content="#0b1020">
+<meta property="og:title" content="Homi: a dashboard for your homelab">
+<meta property="og:description" content="A self-hostable homelab dashboard with live health checks and uptime history.">
+<meta property="og:image" content="brand/homi-banner.png">
+<link rel="icon" href="brand/homi-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-950:#0b1020;--navy-900:#111a2e;--navy-800:#1e293b;
+  --teal-400:#2dd4bf;--teal-600:#0d9488;--teal-700:#0f766e;
+  --indigo-400:#818cf8;--indigo-500:#6366f1;--indigo-600:#4f46e5;
+  --brand-a:var(--teal-600);--brand-b:var(--indigo-600);
+  --bg:#f8fafc;--surface:#fff;--surface-2:#f1f5f9;--border:#e2e8f0;--dots:#cbd5e1;
+  --text:#0f172a;--muted:#475569;--accent:var(--indigo-600);--on-accent:#fff;--teal-text:var(--teal-700);--dot:var(--teal-600);
+  --up:#15803d;--warn:#b45309;--down:#b91c1c;--unk:#64748b;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06);
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --brand-a:var(--teal-400);--brand-b:var(--indigo-500);
+  --bg:var(--navy-950);--surface:var(--navy-900);--surface-2:#0e1528;--border:#26324a;--dots:#1e2a44;
+  --text:#e6eaf4;--muted:#94a3b8;--accent:var(--indigo-400);--on-accent:var(--navy-950);--teal-text:var(--teal-400);--dot:var(--teal-400);
+  --up:#4ade80;--warn:#fbbf24;--down:#f87171;--unk:#94a3b8;--shadow:none;color-scheme:dark;
+}
+  :root:not([data-theme="light"]){
+    --brand-a:var(--teal-400);--brand-b:var(--indigo-500);
+    --bg:var(--navy-950);--surface:var(--navy-900);--surface-2:#0e1528;--border:#26324a;--dots:#1e2a44;
+    --text:#e6eaf4;--muted:#94a3b8;--accent:var(--indigo-400);--on-accent:var(--navy-950);--teal-text:var(--teal-400);--dot:var(--teal-400);
+    --up:#4ade80;--warn:#fbbf24;--down:#f87171;--unk:#94a3b8;--shadow:none;color-scheme:dark;
+  }
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent)}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+section{padding-block:96px;position:relative}
+.label{font:500 12px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 16px;display:flex;align-items:center;gap:10px}
+.label::before{content:"";width:18px;height:2px;background:var(--teal-text);border-radius:2px}
+h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.025em}
+h1{font-size:clamp(2.3rem,5.4vw,4.1rem);font-weight:700}
+h2{font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:700;margin-bottom:14px;max-width:20ch}
+h3{font-size:1rem;font-weight:500;letter-spacing:0}
+.lead{color:var(--muted);font-size:1.15rem;max-width:54ch}
+.mono{font-family:var(--mono)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.grad{background:linear-gradient(45deg,var(--brand-a),var(--brand-b));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* reveal */
+.js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--i,0)*70ms)}
+.js .rv.in{opacity:1;transform:none}
+
+/* nav */
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid transparent;transition:border-color .2s}
+header.scrolled{border-bottom-color:var(--border)}
+nav{display:flex;align-items:center;gap:22px;min-height:64px}
+nav .brand{display:flex;align-items:center;margin-right:auto}
+nav .brand svg{height:30px;width:auto;display:block}
+nav a.link{color:var(--muted);text-decoration:none;font-weight:500;font-size:.9rem;padding:10px 2px;position:relative;transition:color .15s}
+nav a.link::after{content:"";position:absolute;left:0;right:0;bottom:6px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s var(--ease)}
+nav a.link:hover{color:var(--text)}nav a.link:hover::after{transform:scaleX(1)}
+.theme{background:none;border:1px solid var(--border);color:var(--muted);width:44px;height:44px;border-radius:8px;cursor:pointer;display:grid;place-items:center;transition:color .15s,border-color .15s,transform .3s var(--ease)}
+.theme:hover{color:var(--text);border-color:var(--muted);transform:rotate(25deg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:8px;font:500 .95rem var(--sans);text-decoration:none;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;transition:border-color .15s,transform .2s var(--ease),filter .15s}
+.btn:hover{border-color:var(--muted);transform:translateY(-2px)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease)}
+.btn:hover svg{transform:translateX(3px)}
+@media(max-width:700px){nav a.link{display:none}}
+
+/* hero */
+.hero{padding-top:56px;padding-bottom:72px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 70% 40%,#000 20%,transparent 75%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:32px;align-items:center;position:relative}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
+.hero-wm{width:min(100%,380px);height:auto;display:block;margin-bottom:28px;margin-left:-6px}
+.eyebrow{font:500 .82rem var(--mono);color:var(--teal-text);margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap}
+.eyebrow i{font-style:normal;color:var(--muted)}
+.hero h1{max-width:13ch}
+.hero .lead{margin-top:22px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}
+.meta{margin-top:22px;font:400 .8rem var(--mono);color:var(--muted)}
+
+/* wordmark animation */
+.wm-hm{opacity:0;transform:translateX(-14px);animation:wmIn .9s var(--ease) .1s forwards}
+.wm-stem{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:stem .5s var(--ease) .7s forwards}
+.wm-dot{opacity:0;transform-box:fill-box;transform-origin:center;transform:translateY(-30px)}
+.wm-dot.d1{animation:drop .6s cubic-bezier(.3,1.6,.5,1) 1s forwards}
+.wm-dot.d2{animation:drop .6s cubic-bezier(.3,1.6,.5,1) 1s forwards,ring 2.6s ease-out 1.8s infinite}
+@keyframes wmIn{to{opacity:1;transform:none}}
+@keyframes stem{to{transform:scaleY(1)}}
+@keyframes drop{to{opacity:1;transform:none}}
+@keyframes ring{0%{transform:scale(1);opacity:1}70%,100%{transform:scale(2.6);opacity:0}}
+.ripple{transform-box:fill-box;transform-origin:center;opacity:0;animation:ring 2.6s ease-out 1.8s infinite}
+
+/* hub illustration */
+.hub{width:100%;height:auto;display:block;max-height:520px}
+.hub .house{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.4s var(--ease) .3s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.hub .core{opacity:0;animation:fade .5s ease .1s forwards;animation-delay:1.5s}
+@keyframes fade{to{opacity:1}}
+.hub .link{stroke:var(--border);stroke-width:1.5;fill:none}
+.hub .flow{stroke:var(--teal-text);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-dasharray:3 14;opacity:0;animation:fade .6s ease forwards,flow 1.6s linear infinite;animation-delay:1.7s,1.7s}
+@keyframes flow{to{stroke-dashoffset:-34}}
+.hub .node{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.7);animation:pop .6s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:calc(1s + var(--n)*.12s)}
+@keyframes pop{to{opacity:1;transform:none}}
+.hub .node rect{fill:var(--surface);stroke:var(--border)}
+.hub .node text{font:500 11px var(--mono);fill:var(--text)}
+.hub .node .ok{stroke:var(--up);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.hub .node .wn{stroke:var(--warn);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.hub .alt1{animation:alt1 7s steps(1) infinite}
+.hub .alt2{animation:alt2 7s steps(1) infinite}
+@keyframes alt1{0%,45%{opacity:1}50%,95%{opacity:0}100%{opacity:1}}
+@keyframes alt2{0%,45%{opacity:0}50%,95%{opacity:1}100%{opacity:0}}
+.hub .float{animation:bob 6s ease-in-out infinite;animation-delay:calc(var(--n)*-1s)}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.hub .float{transform-box:fill-box}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow)}
+.stat{padding:22px 24px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font:700 2rem/1.1 var(--sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat span{font:400 .78rem var(--mono);color:var(--muted)}
+@media(max-width:640px){.stat{border-right:0;border-bottom:1px solid var(--border)}.stat:last-child{border-bottom:0}}
+
+/* mock dashboard */
+.mock{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-top:56px}
+.mock-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--muted)}
+.mock-bar .dots{display:flex;gap:6px}.mock-bar .dots i{width:10px;height:10px;border-radius:50%;background:var(--border)}
+.mock-bar .search{margin-left:auto;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font:400 .8rem var(--mono)}
+.mock-bar kbd{font:inherit;border:1px solid var(--border);border-radius:4px;padding:0 5px;margin-left:8px}
+.mock-body{padding:22px;display:grid;gap:22px}
+.group-title{font:500 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;gap:12px;align-items:flex-start;transition:border-color .15s,transform .25s var(--ease)}
+.card:hover{border-color:var(--muted);transform:translateY(-3px)}
+.card .ico{flex:none;width:34px;height:34px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;color:var(--muted)}
+.card .name{font-weight:500;font-size:.92rem;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.card .desc{font:400 .75rem var(--mono);color:var(--muted);margin-top:2px;display:flex;justify-content:space-between}
+.card.chk .desc b{color:var(--teal-text)}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:500}
+.st svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.up{color:var(--up)}.warn{color:var(--warn)}.down{color:var(--down)}
+.bars{display:flex;gap:2px;height:16px;margin-top:10px;align-items:stretch}
+.bars b{flex:1;border-radius:1px;background:var(--up);opacity:.85;transform:scaleY(0);transform-origin:bottom;transition:transform .5s var(--ease);transition-delay:calc(var(--k)*18ms)}
+.bars b.w{background:var(--warn)}.bars b.d{background:var(--down)}
+.in .bars b,.bars.in b{transform:scaleY(1)}
+
+/* features */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:40px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:26px;box-shadow:var(--shadow);transition:border-color .2s,transform .3s var(--ease);position:relative;overflow:hidden}
+.tile:hover{border-color:var(--accent);transform:translateY(-5px)}
+.tile .ic{width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;margin-bottom:18px;transition:background .2s,border-color .2s}
+.tile:hover .ic{border-color:var(--teal-text)}
+.tile svg.i{width:22px;height:22px;stroke:var(--teal-text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile h3{margin-bottom:8px}
+.tile p{color:var(--muted);font-size:.93rem}
+.tile code{font:400 .82em var(--mono);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.tile.wide{grid-column:1/-1;display:grid;grid-template-columns:1fr 1.2fr;gap:28px;align-items:center}
+@media(max-width:760px){.tile.wide{grid-template-columns:1fr}}
+.spark{width:100%;height:auto}
+.spark path.line{fill:none;stroke:var(--teal-text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.8s var(--ease) .2s}
+.spark path.area{fill:var(--teal-text);opacity:0;transition:opacity 1s .9s}
+.in .spark path.line,.spark.in path.line{stroke-dashoffset:0}
+.in .spark path.area,.spark.in path.area{opacity:.1}
+.spark text{font:400 10px var(--mono);fill:var(--muted)}
+.spark line{stroke:var(--border)}
+
+/* ops */
+.band{background:var(--surface-2);border-block:1px solid var(--border)}
+.split{display:grid;grid-template-columns:1fr 1.25fr;gap:48px;align-items:center}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:.82rem;min-width:440px}
+th{font:500 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;padding:14px;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:0}
+td.mono{color:var(--muted);font-size:.78rem}
+.js tbody tr{opacity:0;transform:translateX(-14px);transition:opacity .5s var(--ease),transform .5s var(--ease);transition-delay:calc(var(--r)*90ms)}
+.js .in tbody tr{opacity:1;transform:none}
+.note{margin-top:18px;color:var(--muted);font-size:.9rem}
+
+/* marquee */
+.marquee{overflow:hidden;margin-top:40px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.track{display:flex;gap:10px;width:max-content;animation:scroll 40s linear infinite;margin-bottom:10px}
+.track.rev{animation-direction:reverse;animation-duration:48s}
+.marquee:hover .track{animation-play-state:paused}
+.track span{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:9px 16px;font:400 .85rem var(--mono);white-space:nowrap}
+@keyframes scroll{to{transform:translateX(-50%)}}
+
+/* terminal */
+.term{background:var(--navy-950);color:#e6eaf4;border:1px solid #26324a;border-radius:12px;overflow:hidden;margin-top:32px;box-shadow:var(--shadow)}
+.term-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #26324a;font:400 .75rem var(--mono);color:#94a3b8}
+.term-bar i{width:10px;height:10px;border-radius:50%;background:#26324a}
+.term-bar button{margin-left:auto;min-height:44px;min-width:68px;background:transparent;color:#cbd5e1;border:1px solid #26324a;border-radius:8px;font:500 .8rem var(--sans);cursor:pointer;transition:border-color .15s}
+.term-bar button:hover{border-color:#94a3b8}
+.term pre{margin:0;padding:20px;font:400 .88rem/1.9 var(--mono);overflow-x:auto;min-height:9.5em}
+.term .p{color:var(--teal-400);user-select:none}.term .c{color:#94a3b8}.term .o{color:#4ade80}
+.caret{display:inline-block;width:8px;height:1em;background:var(--teal-400);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:20px}
+.step{font-size:.9rem;color:var(--muted);display:flex;gap:12px}
+.step b{font:500 .8rem var(--mono);color:var(--teal-text);flex:none;width:28px;height:28px;border:1px solid var(--border);border-radius:50%;display:grid;place-items:center;background:var(--surface)}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding-top:56px;padding-bottom:32px;color:var(--muted);font-size:.88rem;overflow:hidden}
+.foot-wm{width:min(100%,640px);height:auto;display:block;margin-bottom:40px}
+footer .row{display:flex;gap:24px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+footer .links{display:flex;gap:20px;flex-wrap:wrap}
+footer a{color:var(--muted);text-decoration:none;padding:10px 0;transition:color .15s}
+footer a:hover{color:var(--text)}
+
+.pulse{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .wm-hm,.wm-dot,.hub .node,.hub .core,.hub .flow{opacity:1;transform:none}
+  .wm-stem{transform:none}.hub .house{stroke-dashoffset:0}.ripple{opacity:0}
+  .js .rv,.js tbody tr{opacity:1;transform:none}.bars b{transform:none}
+  .spark path.line{stroke-dashoffset:0}.spark path.area{opacity:.1}
+  .hub .alt2{opacity:0}.hub .flow{stroke-dasharray:3 14}
+  .track{flex-wrap:wrap;width:auto}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="28" y1="32" x2="92" y2="88"><stop offset="0" style="stop-color:var(--brand-a)"/><stop offset="1" style="stop-color:var(--brand-b)"/></linearGradient>
+    <linearGradient id="wm" gradientUnits="userSpaceOnUse" x1="15" y1="0" x2="205" y2="0"><stop offset="0" style="stop-color:var(--brand-a)"/><stop offset="1" style="stop-color:var(--brand-b)"/></linearGradient>
+    <symbol id="ck" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="tri" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <!-- wordmark (brand asset geometry), reusable -->
+    <symbol id="wordmark" viewBox="0 12 230 100">
+      <text x="15" y="100" font-family="Inter,'SF Pro Display','Helvetica Neue',Arial,sans-serif" font-size="88" font-weight="700" letter-spacing="-3" textLength="174" lengthAdjust="spacingAndGlyphs" fill="url(#wm)">hom</text>
+      <rect x="193" y="54" width="12" height="46" rx="3" fill="url(#wm)"/>
+      <circle cx="199" cy="38" r="12" style="fill:var(--dot)" fill-opacity=".18"/>
+      <circle cx="199" cy="38" r="6" style="fill:var(--dot)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header id="hdr">
+  <nav class="wrap" aria-label="Main">
+    <a class="brand" href="#top" aria-label="Homi home"><svg viewBox="0 12 230 100" aria-hidden="true" style="height:40px"><use href="#wordmark" x="0" y="12" width="230" height="100"/></svg></a>
+    <a class="link" href="#features">Features</a>
+    <a class="link" href="#ops">Ops view</a>
+    <a class="link" href="#integrations">Integrations</a>
+    <a class="link" href="#start">Quick start</a>
+    <a class="link" href="https://github.com/arlytrenck/homi">GitHub</a>
+    <button class="theme" id="theme" type="button" aria-label="Toggle theme">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <svg class="hero-wm" viewBox="0 12 230 100" role="img" aria-label="homi">
+        <text class="wm-hm" x="15" y="100" font-family="Inter,'SF Pro Display','Helvetica Neue',Arial,sans-serif" font-size="88" font-weight="700" letter-spacing="-3" textLength="174" lengthAdjust="spacingAndGlyphs" fill="url(#wm)">hom</text>
+        <rect class="wm-stem" x="193" y="54" width="12" height="46" rx="3" fill="url(#wm)"/>
+        <circle class="ripple" cx="199" cy="38" r="12" style="fill:var(--dot)" fill-opacity=".35"/>
+        <circle class="wm-dot d1" cx="199" cy="38" r="12" style="fill:var(--dot)" fill-opacity=".18"/>
+        <circle class="wm-dot d1" cx="199" cy="38" r="6" style="fill:var(--dot)"/>
+      </svg>
+      <div class="eyebrow mono">self-hosted <i>/</i> at a glance <i>/</i> yours</div>
+      <h1>A dashboard for your <span class="grad">homelab.</span></h1>
+      <p class="lead">A calm window onto your own infrastructure. Launch your services, see what is up, and get out of the way. One container, one SQLite file, no external database.</p>
+      <div class="cta">
+        <a class="btn primary" href="#start">Get started <svg viewBox="0 0 24 24"><use href="#arrow"/></svg></a>
+        <a class="btn" href="https://github.com/arlytrenck/homi">View on GitHub</a>
+      </div>
+      <p class="meta">v0.1.0 · MIT licensed · amd64 and arm64</p>
+    </div>
+
+    <!-- hub illustration: services around the home mark -->
+    <svg class="hub" viewBox="0 0 400 400" role="img" aria-label="Services connected to the Homi mark, each with a live status">
+      <g id="links">
+        <path class="link" d="M200 205 L82 78"/><path class="link" d="M200 205 L318 78"/>
+        <path class="link" d="M200 205 L48 205"/><path class="link" d="M200 205 L352 205"/>
+        <path class="link" d="M200 205 L82 332"/><path class="link" d="M200 205 L318 332"/>
+        <path class="flow" d="M200 205 L82 78"/><path class="flow" d="M318 78 L200 205" style="animation-delay:1.7s,1.9s"/>
+        <path class="flow" d="M200 205 L48 205" style="animation-delay:1.7s,2.1s"/><path class="flow" d="M352 205 L200 205" style="animation-delay:1.7s,1.5s"/>
+        <path class="flow" d="M200 205 L82 332" style="animation-delay:1.7s,2.3s"/><path class="flow" d="M318 332 L200 205" style="animation-delay:1.7s,1.8s"/>
+      </g>
+      <g transform="translate(200 200) scale(1.55) translate(-60 -56)">
+        <path class="house" pathLength="1" d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <g class="core"><circle cx="60" cy="67" r="11" style="fill:var(--dot)" fill-opacity=".18"/><circle class="ripple" cx="60" cy="67" r="11" style="fill:var(--dot)" fill-opacity=".35"/><circle cx="60" cy="67" r="5.5" style="fill:var(--dot)"/></g>
+      </g>
+      <g class="node" style="--n:0"><g class="float" style="--n:0"><g transform="translate(82 78)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">proxmox</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+      <g class="node" style="--n:1"><g class="float" style="--n:1"><g transform="translate(318 78)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">pi-hole</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+      <g class="node" style="--n:2"><g class="float" style="--n:2"><g transform="translate(58 205)"><rect x="-48" y="-18" width="96" height="36" rx="8"/><text x="-34" y="4">grafana</text><svg x="26" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+      <g class="node" style="--n:3"><g class="float" style="--n:3"><g transform="translate(342 205)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">jellyfin</text>
+        <svg class="alt1" x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="wn" href="#tri"/></svg>
+        <svg class="alt2" x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+      <g class="node" style="--n:4"><g class="float" style="--n:4"><g transform="translate(82 332)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">nextcloud</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+      <g class="node" style="--n:5"><g class="float" style="--n:5"><g transform="translate(318 332)"><rect x="-52" y="-18" width="104" height="36" rx="8"/><text x="-38" y="4">immich</text><svg x="30" y="-8" width="16" height="16" viewBox="0 0 24 24"><use class="ok" href="#ck"/></svg></g></g></g>
+    </svg>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="stats rv">
+      <div class="stat"><b data-to="18" data-suf="">0</b><span>widgets and integrations</span></div>
+      <div class="stat"><b data-to="3" data-suf="">0</b><span>check types: http, tcp, ping</span></div>
+      <div class="stat"><b data-to="90" data-suf=" d">0</b><span>of uptime history</span></div>
+      <div class="stat"><b data-to="1" data-suf="">0</b><span>container, one SQLite file</span></div>
+    </div>
+
+    <div class="mock rv" role="img" aria-label="Example Homi dashboard showing grouped services with status and uptime history">
+      <div class="mock-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <svg width="18" height="18" viewBox="18 18 84 84" aria-hidden="true"><path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="67" r="5.5" style="fill:var(--dot)" class="pulse"/></svg>
+        <span>homi.lan</span>
+        <span class="search">Search services <kbd>/</kbd></span>
+      </div>
+      <div class="mock-body">
+        <div><div class="group-title">Infrastructure</div><div class="cards" id="cards-a"></div></div>
+        <div><div class="group-title">Media</div><div class="cards" id="cards-b"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="padding-top:40px">
+  <div class="wrap">
+    <p class="label rv">Features</p>
+    <h2 class="rv" style="--i:1">Everything on one page, nothing extra.</h2>
+    <p class="lead rv" style="--i:2">Home-sized, not enterprise-sized. Fast, quiet, and yours.</p>
+    <div class="grid">
+      <div class="tile wide rv">
+        <div>
+          <div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+          <h3>Live status and uptime history</h3>
+          <p>HTTP, TCP and ping checks with up, degraded and down states, pushed to the page over SSE. Browse 24 hours, 7, 30 and 90 days, built from hourly rollups.</p>
+        </div>
+        <svg class="spark" viewBox="0 0 400 130" aria-hidden="true">
+          <line x1="0" y1="20" x2="400" y2="20"/><line x1="0" y1="65" x2="400" y2="65"/><line x1="0" y1="110" x2="400" y2="110"/>
+          <path class="area" d="M0 40 C30 38 50 30 80 34 S130 50 160 36 S210 24 240 30 S290 90 310 96 S340 40 370 32 L400 30 L400 110 L0 110Z"/>
+          <path class="line" pathLength="1" d="M0 40 C30 38 50 30 80 34 S130 50 160 36 S210 24 240 30 S290 90 310 96 S340 40 370 32 L400 30"/>
+          <text x="2" y="14">response time</text><text x="398" y="126" text-anchor="end">last 24 h</text>
+        </svg>
+      </div>
+      <div class="tile rv" style="--i:1"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h3>Service launcher</h3><p>Groups, icons, descriptions and search. Press <code>/</code> to find anything. Drag to reorder with touch or keyboard.</p></div>
+      <div class="tile rv" style="--i:2"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></div><h3>Docker auto-discovery</h3><p>Label a container with <code>homi.enable=true</code> and it appears with its own health check.</p></div>
+      <div class="tile rv" style="--i:3"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>Secure by default</h3><p>Argon2id passwords, hashed sessions, CSRF checks, login rate limiting, SSRF-guarded requests, AES-256-GCM for stored secrets.</p></div>
+      <div class="tile rv" style="--i:4"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h3>Backup and restore</h3><p>YAML export and import with a dry-run preview. Your whole setup in one file.</p></div>
+      <div class="tile rv" style="--i:5"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div><h3>Installable</h3><p>PWA manifest, light and dark themes, and touch targets sized for phones. Multi-arch image for amd64 and arm64.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="ops" class="band">
+  <div class="wrap split">
+    <div>
+      <p class="label rv">Ops view</p>
+      <h2 class="rv" style="--i:1">Worst first.</h2>
+      <p class="lead rv" style="--i:2">A dense, NOC-style table at <span class="mono">/ops</span> that puts what is broken at the top. Add <span class="mono">?kiosk=1</span> for a wall display.</p>
+      <p class="note rv" style="--i:3">Status is never color alone. Every state has an icon and a word.</p>
+    </div>
+    <div class="table-wrap rv" id="optable">
+      <table>
+        <thead><tr><th>Service</th><th>Status</th><th>Check</th><th>30d</th></tr></thead>
+        <tbody>
+          <tr style="--r:0"><td>Nextcloud</td><td><span class="st down"><svg><use href="#x"/></svg>Down</span></td><td class="mono">http · connection refused</td><td class="mono">97.2%</td></tr>
+          <tr style="--r:1"><td>Jellyfin</td><td><span class="st warn"><svg><use href="#tri"/></svg>Degraded</span></td><td class="mono">http · 1.8 s</td><td class="mono">99.1%</td></tr>
+          <tr style="--r:2"><td>Proxmox</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">tcp · 8006</td><td class="mono">99.98%</td></tr>
+          <tr style="--r:3"><td>Pi-hole</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">ping · 4 ms</td><td class="mono">100%</td></tr>
+          <tr style="--r:4"><td>Grafana</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">http · 62 ms</td><td class="mono">99.9%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="integrations">
+  <div class="wrap">
+    <p class="label rv">Widgets and integrations</p>
+    <h2 class="rv" style="--i:1">Pulls from the tools you already run.</h2>
+    <p class="lead rv" style="--i:2">Show live numbers next to each service, or write your own with the plugin API.</p>
+  </div>
+  <div class="marquee" id="mq" aria-label="Supported integrations"></div>
+  <div class="wrap"><p class="note">Integrations are tested against mock servers, not yet against live instances. See the <a href="https://github.com/arlytrenck/homi/blob/main/docs/integrations.md">integration docs</a> and <a href="https://github.com/arlytrenck/homi/blob/main/docs/plugin-api.md">plugin API</a>.</p></div>
+</section>
+
+<section id="start" class="band">
+  <div class="wrap">
+    <p class="label rv">Quick start</p>
+    <h2 class="rv" style="--i:1">Running in a minute.</h2>
+    <p class="lead rv" style="--i:2">Data lives in <span class="mono">./data</span>. Back up the whole folder.</p>
+    <div class="term rv" id="term">
+      <div class="term-bar"><i></i><i></i><i></i><span>~/homi</span><button type="button" id="copy">Copy</button></div>
+<pre><span id="typed"></span><span class="caret"></span></pre>
+    </div>
+    <div class="steps">
+      <div class="step rv"><b>1</b><span>Run the three commands above.</span></div>
+      <div class="step rv" style="--i:1"><b>2</b><span>Open <span class="mono">localhost:3000</span> and create the admin account.</span></div>
+      <div class="step rv" style="--i:2"><b>3</b><span>Add your first service. Exposed beyond your LAN? Set <span class="mono">HOMI_SETUP_TOKEN</span> first.</span></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <svg class="foot-wm rv" viewBox="0 12 230 100" role="img" aria-label="homi"><use href="#wordmark" x="0" y="12" width="230" height="100"/></svg>
+    <div class="row">
+      <span>A dashboard for your homelab. MIT licensed.</span>
+      <div class="links">
+        <a href="https://github.com/arlytrenck/homi">GitHub</a>
+        <a href="https://github.com/arlytrenck/homi/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/arlytrenck/homi/blob/main/docs/roadmap.md">Roadmap</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement,reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  try{var t=localStorage.getItem('homi-theme');if(t)root.setAttribute('data-theme',t)}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var n=getComputedStyle(root).colorScheme==='dark'?'light':'dark';root.setAttribute('data-theme',n);
+    try{localStorage.setItem('homi-theme',n)}catch(e){}
+  });
+  var hdr=document.getElementById('hdr');
+  addEventListener('scroll',function(){hdr.classList.toggle('scrolled',scrollY>8)},{passive:true});
+
+  /* dashboard mock */
+  var ico={server:'<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>',chart:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',box:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',film:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',down:'<path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/>',cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 18.9"/>'};
+  function bars(bad){var s='';for(var i=0;i<30;i++){var c='';if(bad==='d'&&i>25)c='d';else if(bad==='w'&&(i===18||i===24||i>27))c='w';else if(i===7&&bad==='x')c='w';s+='<b class="'+c+'" style="--k:'+i+'"></b>'}return s}
+  var A=[['Proxmox','pve.lan:8006','server','up','',12],['Pi-hole','dns.lan/admin','shield','up','',4],['Grafana','metrics.lan','chart','up','x',62],['Nextcloud','cloud.lan','cloud','down','d',0]];
+  var B=[['Jellyfin','media.lan:8096','film','warn','w',1800],['Sonarr','sonarr.lan','down','up','',88],['Radarr','radarr.lan','down','up','x',91],['Immich','photos.lan','box','up','',140]];
+  var S={up:['ck','Up'],warn:['tri','Degraded'],down:['x','Down']};
+  function ms(v){return v?(v>=1000?(v/1000).toFixed(1)+' s':v+' ms'):'--'}
+  function render(id,list){
+    document.getElementById(id).innerHTML=list.map(function(r){
+      var s=S[r[3]];
+      return '<div class="card"><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ico[r[2]]+'</svg></div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div></div>';
+    }).join('');
+  }
+  render('cards-a',A);render('cards-b',B);
+  if(!reduce){
+    var cards=[].slice.call(document.querySelectorAll('.card'));
+    setInterval(function(){
+      var c=cards[Math.floor(Math.random()*cards.length)],l=c.querySelector('.lat'),v=+l.dataset.v;
+      if(!v)return;
+      c.classList.add('chk');l.textContent='checking';
+      setTimeout(function(){var n=Math.max(2,Math.round(v*(0.85+Math.random()*0.3)));if(v>=1000)n=Math.round(n/100)*100;l.textContent=ms(n);c.classList.remove('chk')},700);
+    },1600);
+  }
+
+  /* scroll reveal + triggers */
+  function countUp(el){
+    var to=+el.dataset.to,suf=el.dataset.suf||'',t0=performance.now();
+    if(reduce){el.textContent=to+suf;return}
+    (function f(n){var p=Math.min(1,(n-t0)/1300),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e)+suf;if(p<1)requestAnimationFrame(f)})(t0);
+  }
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(!e.isIntersecting)return;e.target.classList.add('in');io.unobserve(e.target);
+    e.target.querySelectorAll('[data-to]').forEach(countUp);
+    if(e.target.id==='term')typeTerm();
+  })},{threshold:.15});
+  document.querySelectorAll('.rv,.mock,.spark,#optable').forEach(function(el){io.observe(el)});
+  document.querySelectorAll('.mock .bars').forEach(function(el){io.observe(el)});
+
+  /* marquee */
+  var names=['Proxmox','Docker','Pi-hole','AdGuard Home','UniFi','Synology','TrueNAS','Sonarr','Radarr','Lidarr','Prowlarr','Authentik','Uptime Kuma','Grafana','Weather','Notes','Bookmarks','Host stats'];
+  function row(list,cls){var h=list.map(function(n){return '<span>'+n+'</span>'}).join('');return '<div class="track '+cls+'">'+h+h+'</div>'}
+  document.getElementById('mq').innerHTML=row(names.slice(0,9).concat(names.slice(9)),'')+row(names.slice().reverse(),'rev');
+
+  /* terminal typing */
+  var lines=['mkdir homi && cd homi','curl -O https://raw.githubusercontent.com/arlytrenck/homi/main/docker-compose.yml','docker compose up -d'];
+  var typed=document.getElementById('typed'),started=false;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+  function typeTerm(){
+    if(started)return;started=true;
+    if(reduce){typed.innerHTML=lines.map(function(l){return '<span class="p">$ </span>'+esc(l)}).join('\n')+'\n<span class="o">✔ homi running on :3000</span>';return}
+    var li=0,ci=0,out='';
+    (function step(){
+      if(li>=lines.length){typed.innerHTML=out+'<span class="o">✔ homi running on :3000</span>\n';return}
+      var l=lines[li];
+      typed.innerHTML=out+'<span class="p">$ </span>'+esc(l.slice(0,ci));
+      if(ci<l.length){ci++;setTimeout(step,l.length>40?12:28)}
+      else{out+='<span class="p">$ </span>'+esc(l)+'\n';li++;ci=0;setTimeout(step,350)}
+    })();
+  }
+  document.getElementById('copy').addEventListener('click',function(){
+    var b=this,done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1500)};
+    if(navigator.clipboard)navigator.clipboard.writeText(lines.join('\n')).then(done,function(){});
+  });
+})();
+</script>
+</body>
+</html>
