@@ -13,3 +13,4 @@ playwright-report
 .claude/
 .e2e-data
 .e2e-auth.json
+integrations.local.json

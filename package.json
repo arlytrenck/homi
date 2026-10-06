@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "verify:integrations": "vitest run --config vitest.verify.config.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

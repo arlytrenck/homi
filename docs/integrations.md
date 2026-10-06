@@ -31,3 +31,13 @@ Weather (Open-Meteo, no key), notes, bookmarks, and host stats. Host stats show 
 ## Outbound policy
 
 All requests go through the SSRF guard: private (RFC1918) addresses are allowed, cloud-metadata/link-local addresses are always blocked, and loopback is blocked unless enabled in Settings. See [security.md](security.md).
+
+## Verifying against your own instances
+
+Mock tests can't catch every vendor API difference. To check Homi against real services, copy `integrations.local.example.json` to `integrations.local.json` (git-ignored), fill in the ones you run with read-only credentials, and run:
+
+```bash
+pnpm verify:integrations
+```
+
+It runs each integration's connection test and every widget, prints the (secret-redacted) output, and flags errors, empty output and suspicious values like `NaN`. It makes read-only requests only.
