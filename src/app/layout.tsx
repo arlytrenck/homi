@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Self-hosted homelab dashboard",
   applicationName: "Homi",
 };
-export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f7f8fa" }, { media: "(prefers-color-scheme: dark)", color: "#14161a" }] };
+export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f7f8fa" }, { media: "(prefers-color-scheme: dark)", color: "#0b1020" }] };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = (await cookies()).get("homi_theme")?.value;

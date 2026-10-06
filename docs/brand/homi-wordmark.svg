@@ -6,7 +6,7 @@
       <stop offset="1" stop-color="#6366f1"/>
     </linearGradient>
   </defs>
-  <text x="15" y="100" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="88" font-weight="700" letter-spacing="-3" fill="url(#wm)">hom</text>
+  <text x="15" y="100" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="88" font-weight="700" letter-spacing="-3" textLength="174" lengthAdjust="spacingAndGlyphs" fill="url(#wm)">hom</text>
   <rect x="193" y="54" width="12" height="46" rx="3" fill="url(#wm)"/>
   <circle cx="199" cy="38" r="12" fill="#2dd4bf" fill-opacity="0.18"/>
   <circle cx="199" cy="38" r="6" fill="#2dd4bf"/>

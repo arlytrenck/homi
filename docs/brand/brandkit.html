@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homi brand kit</title>
+<style>
+  :root { --bg:#f7f8fa; --surface:#fff; --text:#0f172a; --muted:#475569; --border:#e2e8f0; color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 56px 0 16px; font-weight: 500; }
+  p { margin: 0 0 12px; max-width: 64ch; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--muted); }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .stage { border-radius: 10px; display: grid; place-items: center; height: 150px; margin-bottom: 10px; }
+  .stage img { max-width: 70%; max-height: 70%; }
+  .dark { background: #0b1020; } .light { background: #fff; border: 1px solid var(--border); } .tint { background: #eef2ff; }
+  .cap { font-size: 13px; color: var(--muted); } .cap b { color: var(--text); font-weight: 500; display: block; }
+  .sw { height: 72px; border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(0,0,0,.06); }
+  .grad { height: 72px; border-radius: 10px; margin-bottom: 8px; }
+  .hero { background: #0b1020; border-radius: 16px; padding: 40px 28px; display: grid; place-items: center; }
+  .hero img { width: min(520px, 100%); }
+  .do { border-left: 3px solid #16a34a; } .dont { border-left: 3px solid #dc2626; }
+  .status { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pill { display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:6px 12px; }
+  .dot { width:16px; height:16px; border-radius:50%; display:grid; place-items:center; color:#fff; font-size:10px; font-weight:700; }
+  table { width:100%; border-collapse: collapse; background: var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; font-size: 14px; }
+  td, th { text-align:left; padding: 8px 12px; border-bottom: 1px solid var(--border); } th { font-weight:500; color: var(--muted); font-size: 12px; }
+  .ui-demo { background:#0b1020; border-radius:12px; padding:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .ui-demo.l { background:#f7f8fa; border:1px solid var(--border); }
+  .btn { border-radius:8px; padding:9px 14px; font-size:14px; border:1px solid transparent; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Homi brand kit</h1>
+  <p class="mono">self-hosted / at a glance / yours</p>
+  <p>Homi is a calm window onto your own infrastructure: home-sized, fast, quiet, and yours. The mark is a house with a status dot at its center. The dot is a service that is alive, and it is the same dot as the <b>i</b> in the wordmark.</p>
+
+  <div class="hero"><img src="homi-lockup.svg" alt="Homi logo lockup"></div>
+
+  <h2>Logo variants</h2>
+  <div class="grid">
+    <div class="card"><div class="stage dark"><img src="homi-logo.svg" alt=""></div><div class="cap"><b>App icon (tile)</b>Favicon, README, small sizes. Works on any background.</div></div>
+    <div class="card"><div class="stage dark"><img src="homi-mark.svg" alt=""></div><div class="cap"><b>Mark, dark surfaces</b>Teal #2dd4bf to indigo #6366f1.</div></div>
+    <div class="card"><div class="stage light"><img src="homi-mark-light.svg" alt=""></div><div class="cap"><b>Mark, light surfaces</b>Darker gradient. The dark-surface teal is only 1.9:1 on white.</div></div>
+    <div class="card"><div class="stage light"><img src="homi-mark-mono.svg" alt="" style="filter:none"></div><div class="cap"><b>Mono</b>Uses <span class="mono">currentColor</span> for single-color contexts.</div></div>
+    <div class="card"><div class="stage light"><img src="homi-lockup-light.svg" alt=""></div><div class="cap"><b>Lockup, light</b>Tile plus wordmark with a darker gradient.</div></div>
+    <div class="card"><div class="stage dark"><img src="homi-icon-maskable.svg" alt="" style="border-radius:50%;width:110px"></div><div class="cap"><b>Maskable icon</b>Full-bleed; the mark stays inside the 80% safe circle.</div></div>
+  </div>
+
+  <h2>Clear space and size</h2>
+  <div class="grid">
+    <div class="card"><div class="stage tint"><div style="padding:18px;outline:1px dashed #6366f1;outline-offset:0"><img src="homi-mark-light.svg" alt="" style="width:84px;display:block"></div></div><div class="cap"><b>Clear space</b>Keep at least the width of the dot's outer ring (about 1/5 of the mark) free on every side.</div></div>
+    <div class="card"><div class="stage light" style="gap:18px;grid-auto-flow:column"><img src="homi-logo.svg" alt="" style="width:16px"><img src="homi-logo.svg" alt="" style="width:24px"><img src="homi-logo.svg" alt="" style="width:48px"><img src="homi-logo.svg" alt="" style="width:72px"></div><div class="cap"><b>Minimum size</b>Mark 16 px, lockup 96 px wide. Under 24 px use the tile.</div></div>
+  </div>
+
+  <h2>Usage</h2>
+  <div class="grid">
+    <div class="card do"><div class="cap"><b>Do</b>Pick the variant by background. Use the tile on photos or busy backgrounds. Keep the gradient teal top-left to indigo bottom-right. Write the name in lowercase: homi.</div></div>
+    <div class="card dont"><div class="cap"><b>Don't</b>Recolor, rotate, outline, add glows or shadows, stretch, or use the dark-surface gradient on white.</div></div>
+  </div>
+
+  <h2>Color</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+    <div><div class="sw" style="background:#0b1020"></div><div class="cap"><b>navy-950</b><span class="mono">#0b1020</span> background</div></div>
+    <div><div class="sw" style="background:#111a2e"></div><div class="cap"><b>navy-900</b><span class="mono">#111a2e</span> dark cards</div></div>
+    <div><div class="sw" style="background:#1e293b"></div><div class="cap"><b>navy-800</b><span class="mono">#1e293b</span> tile start</div></div>
+    <div><div class="sw" style="background:#2dd4bf"></div><div class="cap"><b>teal-400</b><span class="mono">#2dd4bf</span> dot, on dark</div></div>
+    <div><div class="sw" style="background:#0d9488"></div><div class="cap"><b>teal-600</b><span class="mono">#0d9488</span> on light, graphics</div></div>
+    <div><div class="sw" style="background:#0f766e"></div><div class="cap"><b>teal-700</b><span class="mono">#0f766e</span> teal text on light</div></div>
+    <div><div class="sw" style="background:#818cf8"></div><div class="cap"><b>indigo-400</b><span class="mono">#818cf8</span> accent, dark</div></div>
+    <div><div class="sw" style="background:#6366f1"></div><div class="cap"><b>indigo-500</b><span class="mono">#6366f1</span> gradient end</div></div>
+    <div><div class="sw" style="background:#4f46e5"></div><div class="cap"><b>indigo-600</b><span class="mono">#4f46e5</span> accent, light</div></div>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div><div class="grad" style="background:linear-gradient(135deg,#2dd4bf,#6366f1)"></div><div class="cap"><b>Gradient, dark surfaces</b>45° teal-400 to indigo-500</div></div>
+    <div><div class="grad" style="background:linear-gradient(135deg,#0d9488,#4f46e5)"></div><div class="cap"><b>Gradient, light surfaces</b>45° teal-600 to indigo-600</div></div>
+  </div>
+
+  <h2>Status colors (separate from brand)</h2>
+  <div class="status">
+    <span class="pill"><span class="dot" style="background:#16a34a">✓</span> Up</span>
+    <span class="pill"><span class="dot" style="background:#d97706">!</span> Degraded</span>
+    <span class="pill"><span class="dot" style="background:#dc2626">×</span> Down</span>
+    <span class="pill"><span class="dot" style="background:#64748b">–</span> Unknown</span>
+  </div>
+  <p style="margin-top:12px" class="cap">Never color alone: always an icon or text too. Brand teal is not used for "up", so a green check never competes with the logo's dot.</p>
+
+  <h2>Accent in the interface</h2>
+  <div class="ui-demo"><span class="btn" style="background:#818cf8;color:#0b1020">Add service</span><span class="btn" style="border-color:#27324d;color:#e8ecf5">Cancel</span><span style="color:#818cf8">Link</span><span class="mono" style="color:#94a3b8">https://plex.lan</span></div>
+  <div class="ui-demo l" style="margin-top:10px"><span class="btn" style="background:#4f46e5;color:#fff">Add service</span><span class="btn" style="border-color:#e2e8f0;background:#fff">Cancel</span><span style="color:#4f46e5">Link</span><span class="mono">https://plex.lan</span></div>
+
+  <h2>Contrast</h2>
+  <table>
+    <tr><th>Pair</th><th>Ratio</th><th>Use</th></tr>
+    <tr><td>teal-400 on navy-950</td><td>10.2</td><td>Text and graphics</td></tr>
+    <tr><td>indigo-400 on navy-950</td><td>6.4</td><td>Text, accent</td></tr>
+    <tr><td>white on indigo-600</td><td>6.3</td><td>Primary button, light</td></tr>
+    <tr><td>navy-950 on indigo-400</td><td>6.4</td><td>Primary button, dark</td></tr>
+    <tr><td>teal-700 on white</td><td>5.5</td><td>Text</td></tr>
+    <tr><td>teal-600 on white</td><td>3.7</td><td>Graphics only</td></tr>
+    <tr><td>teal-400 on white</td><td>1.9</td><td>Do not use</td></tr>
+  </table>
+
+  <h2>Typography</h2>
+  <div class="card">
+    <div style="font-size:44px;font-weight:700;letter-spacing:-0.03em;line-height:1.1">homi</div>
+    <p class="cap" style="margin-top:8px"><b style="display:inline">Inter</b> 700 for the wordmark and hero text; 400 and 500 in the UI. Sentence case everywhere.</p>
+    <p class="mono">JetBrains Mono: self-hosted / at a glance / yours · https://plex.lan:32400 · homi.enable=true</p>
+  </div>
+
+  <h2>Voice</h2>
+  <div class="grid">
+    <div class="card do"><div class="cap"><b>Say</b>"Connection refused."<br>"TLS certificate not trusted. Enable Ignore TLS errors for self-signed certs."<br>"Add service"</div></div>
+    <div class="card dont"><div class="cap"><b>Avoid</b>"Oops! Something went wrong!"<br>"Please Try Again Later"<br>Emoji or exclamation marks in the UI</div></div>
+  </div>
+
+  <p class="mono" style="margin-top:48px">Spec and tokens: docs/brand/BRAND.md · src/app/brand.css</p>
+</main>
+</body>
+</html>

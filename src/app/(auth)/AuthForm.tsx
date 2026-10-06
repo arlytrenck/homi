@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiClientError } from "@/lib/api-client";
+import { BrandMark } from "@/components/BrandMark";
 
 export function AuthForm({ mode, tokenRequired }: { mode: "login" | "setup"; tokenRequired?: boolean }) {
   const router = useRouter();
@@ -24,6 +25,7 @@ export function AuthForm({ mode, tokenRequired }: { mode: "login" | "setup"; tok
   return (
     <main className="grid min-h-dvh place-items-center px-4">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4 p-6">
+        <BrandMark size={44} />
         <div>
           <h1 className="text-xl font-semibold">{mode === "setup" ? "Welcome to Homi" : "Sign in"}</h1>
           <p className="text-sm text-muted">{mode === "setup" ? "Create the admin account to get started." : "Enter your credentials."}</p>

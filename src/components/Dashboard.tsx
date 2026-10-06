@@ -15,6 +15,7 @@ import { StatusDot } from "./StatusDot";
 import { ServiceIcon } from "./ServiceIcon";
 import { ServiceDialog } from "./ServiceDialog";
 import { Clock } from "./Clock";
+import { BrandMark } from "./BrandMark";
 import { WidgetCard } from "./WidgetCard";
 import { WidgetDialog } from "./WidgetDialog";
 
@@ -148,7 +149,7 @@ export function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6">
       <header className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-xl font-semibold">{data.settings.title}</h1>
+        <h1 className="mr-auto flex items-center gap-2 text-xl font-semibold"><BrandMark size={30} />{data.settings.title}</h1>
         <Clock />
         <div className="relative w-full sm:w-64 sm:order-none order-last">
           <Search size={16} className="pointer-events-none absolute left-3 top-3 text-muted" aria-hidden />

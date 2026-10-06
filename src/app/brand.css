@@ -1,0 +1,21 @@
+/* Homi brand tokens. Source of truth for color; documented in docs/brand/BRAND.md. */
+:root {
+  /* Palette */
+  --navy-950: #0b1020;
+  --navy-900: #111a2e;
+  --navy-800: #1e293b;
+  --teal-400: #2dd4bf;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+
+  /* Logo gradient stops: light surfaces use the darker pair (>= 3.7:1 on white) */
+  --brand-a: var(--teal-600);
+  --brand-b: var(--indigo-600);
+}
+:root[data-theme="dark"] { --brand-a: var(--teal-400); --brand-b: var(--indigo-500); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) { --brand-a: var(--teal-400); --brand-b: var(--indigo-500); }
+}
