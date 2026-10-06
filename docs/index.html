@@ -124,6 +124,7 @@ section[id]{scroll-margin-top:68px}
 .cmd .p{color:var(--teal-text)}.cmd code{font:inherit}
 .cmd .cp{font:500 .72rem var(--sans);border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface)}
 .stage{position:relative;margin-top:64px;perspective:1600px}
+.mock iframe{display:block;width:100%;height:820px;border:0;background:#0b1020}
 .stage .mock{margin-top:0;transform:rotateX(var(--tilt,8deg)) translateY(var(--ty,0));transform-origin:50% 0;transition:transform .12s linear;box-shadow:0 30px 60px -30px rgba(0,0,0,.5)}
 .stage::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:120px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
 .float-chip{position:absolute;z-index:2;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font:500 .8rem var(--mono);box-shadow:var(--shadow);animation:bob 6s ease-in-out infinite}
@@ -180,6 +181,13 @@ section[id]{scroll-margin-top:68px}
 .mock-bar .dots{display:flex;gap:6px}.mock-bar .dots i{width:10px;height:10px;border-radius:50%;background:var(--border)}
 .mock-bar .search{margin-left:auto;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font:400 .8rem var(--mono)}
 .mock-bar kbd{font:inherit;border:1px solid var(--border);border-radius:4px;padding:0 5px;margin-left:8px}
+.msum{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.msum span{background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px}
+.msum i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.mwid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.mw{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--muted)}
+.mw b{display:block;font-size:18px;color:var(--text);margin:2px 0 6px;letter-spacing:-.02em}
+.mw .mb{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-bottom:6px}.mw .mb u{display:block;height:100%;background:linear-gradient(90deg,var(--brand-a),var(--brand-b))}
 .mock-body{padding:22px;display:grid;gap:22px}
 .group-title{font:500 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
@@ -328,7 +336,6 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
     <a class="brand" href="#top" aria-label="Homi home"><svg viewBox="0 0 120 120" width="42" height="42" aria-hidden="true"><rect x=".5" y=".5" width="119" height="119" rx="27.5" fill="url(#tb)" stroke="#334155" stroke-opacity=".7"/><path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#gt)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="67" r="11" fill="#2dd4bf" fill-opacity=".18"/><circle cx="60" cy="67" r="5.5" fill="#2dd4bf"/></svg></a>
     <div class="links" id="links">
       <a class="link" href="#features">Features</a>
-      <a class="link" href="#demo">Demo</a>
       <a class="link" href="#ops">Ops view</a>
       <a class="link" href="#integrations">Integrations</a>
       <a class="link" href="#start">Quick start</a>
@@ -367,20 +374,8 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
     </div>
 
     <div class="stage">
-      <div class="float-chip fc1"><span class="st up"><svg><use href="#ck"/></svg>proxmox</span><b>12 ms</b></div>
-      <div class="float-chip fc2"><span class="st warn"><svg><use href="#tri"/></svg>jellyfin</span><b>1.8 s</b></div>
-      <div class="float-chip fc3"><span class="st up"><svg><use href="#ck"/></svg>pi-hole</span><b>4 ms</b></div>
-    <div class="mock" id="mock" role="img" aria-label="Example Homi dashboard showing grouped services with status and uptime history">
-      <div class="mock-bar">
-        <span class="dots"><i></i><i></i><i></i></span>
-        <svg width="18" height="18" viewBox="18 18 84 84" aria-hidden="true"><path d="M28 60 L60 32 L92 60 M38 51.25 V88 H82 V51.25" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="67" r="5.5" style="fill:var(--dot)" class="pulse"/></svg>
-        <span>homi.lan</span>
-        <span class="search">Search services <kbd>/</kbd></span>
-      </div>
-      <div class="mock-body">
-        <div><div class="group-title">Infrastructure</div><div class="cards" id="cards-a"></div></div>
-        <div><div class="group-title">Media</div><div class="cards" id="cards-b"></div></div>
-      </div>
+    <div class="mock" id="mock" role="img" aria-label="Homi dashboard fully populated with grouped services, widgets and uptime history">
+      <iframe src="demo.html" title="Homi populated dashboard" loading="lazy"></iframe>
     </div>
     </div>
   </div>
@@ -392,7 +387,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
       <div class="stat"><b data-to="18" data-suf="">0</b><span>widgets and integrations</span></div>
       <div class="stat"><b data-to="3" data-suf="">0</b><span>check types: http, tcp, ping</span></div>
       <div class="stat"><b data-to="90" data-suf=" d">0</b><span>of uptime history</span></div>
-      <div class="stat"><b data-to="1" data-suf="">0</b><span>container, one SQLite file</span></div>
+      <div class="stat"><b data-to="2" data-suf="">0</b><span>architectures: amd64 and arm64</span></div>
     </div>
 
   </div>
@@ -402,7 +397,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
   <div class="wrap">
     <p class="label rv">Features</p>
     <h2 class="rv" style="--i:1">Everything on one page, nothing extra.</h2>
-    <p class="lead rv" style="--i:2">Home-sized, not enterprise-sized. Fast, quiet, and yours.</p>
+    <p class="lead rv" style="--i:2">Home-sized, not enterprise-sized. Fast and yours.</p>
     <div class="grid">
       <div class="tile wide rv">
         <div>
@@ -427,15 +422,6 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
   </div>
 </section>
 
-<section id="demo" style="padding-top:40px;padding-bottom:40px">
-  <div class="wrap">
-    <p class="label rv">Fully configured</p>
-    <h2 class="rv" style="--i:1">Your homelab, populated.</h2>
-    <iframe src="demo.html" title="Homi populated dashboard mockup" loading="lazy" style="width:100%;height:760px;border:1px solid var(--border);border-radius:16px;margin-top:20px;background:#0b1020"></iframe>
-    <p class="note"><a href="demo.html">Open full size</a></p>
-  </div>
-</section>
-
 <section id="ops" class="band">
   <div class="wrap split">
     <div>
@@ -450,7 +436,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
         <thead><tr><th>Service</th><th>Status</th><th>Check</th><th>30d</th></tr></thead>
         <tbody>
           <tr style="--r:0"><td>Nextcloud</td><td><span class="st down"><svg><use href="#x"/></svg>Down</span></td><td class="mono">http · connection refused</td><td class="mono">97.2%</td></tr>
-          <tr style="--r:1"><td>Jellyfin</td><td><span class="st warn"><svg><use href="#tri"/></svg>Degraded</span></td><td class="mono">http · 1.8 s</td><td class="mono">99.1%</td></tr>
+          <tr style="--r:1"><td>Docker</td><td><span class="st warn"><svg><use href="#tri"/></svg>Degraded</span></td><td class="mono">http · 1.8 s</td><td class="mono">99.8%</td></tr>
           <tr style="--r:2"><td>Proxmox</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">tcp · 8006</td><td class="mono">99.98%</td></tr>
           <tr style="--r:3"><td>Pi-hole</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">ping · 4 ms</td><td class="mono">100%</td></tr>
           <tr style="--r:4"><td>Grafana</td><td><span class="st up"><svg><use href="#ck"/></svg>Up</span></td><td class="mono">http · 62 ms</td><td class="mono">99.9%</td></tr>
@@ -537,29 +523,6 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
 
   /* dashboard mock */
   var ico={server:'<rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>',chart:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',box:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',film:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 16h4M17 8h4M17 16h4"/>',down:'<path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/>',cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 18.9"/>'};
-  function bars(bad){var s='';for(var i=0;i<30;i++){var c='';if(bad==='d'&&i>25)c='d';else if(bad==='w'&&(i===18||i===24||i>27))c='w';else if(i===7&&bad==='x')c='w';s+='<b class="'+c+'" style="--k:'+i+'"></b>'}return s}
-  var A=[['Proxmox','pve.lan:8006','proxmox','up','',12],['Pi-hole','dns.lan/admin','pi-hole','up','',4],['Grafana','metrics.lan','grafana','up','x',62],['Nextcloud','cloud.lan','nextcloud','down','d',0]];
-  var B=[['Jellyfin','media.lan:8096','jellyfin','warn','w',1800],['Sonarr','sonarr.lan','sonarr','up','',88],['Radarr','radarr.lan','radarr','up','x',91],['Immich','photos.lan','immich','up','',140]];
-  var S={up:['ck','Up'],warn:['tri','Degraded'],down:['x','Down']};
-  function ms(v){return v?(v>=1000?(v/1000).toFixed(1)+' s':v+' ms'):'--'}
-  function render(id,list){
-    document.getElementById(id).innerHTML=list.map(function(r){
-      var s=S[r[3]];
-      return '<div class="card"><div class="ico"><img src="icons/'+r[2]+'.svg" alt="" width="22" height="22" loading="lazy">'+'</div><div style="flex:1;min-width:0"><div class="name"><span>'+r[0]+'</span><span class="st '+r[3]+'"><svg><use href="#'+s[0]+'"/></svg>'+s[1]+'</span></div><div class="desc"><span>'+r[1]+'</span><b class="lat" data-v="'+r[5]+'">'+ms(r[5])+'</b></div><div class="bars" aria-hidden="true">'+bars(r[4])+'</div></div></div>';
-    }).join('');
-  }
-  render('cards-a',A);render('cards-b',B);
-  if(!reduce){
-    var cards=[].slice.call(document.querySelectorAll('.card'));
-    setInterval(function(){
-      var c=cards[Math.floor(Math.random()*cards.length)],l=c.querySelector('.lat'),v=+l.dataset.v;
-      if(!v)return;
-      c.classList.add('chk');l.textContent='checking';
-      setTimeout(function(){var n=Math.max(2,Math.round(v*(0.85+Math.random()*0.3)));if(v>=1000)n=Math.round(n/100)*100;l.textContent=ms(n);c.classList.remove('chk')},700);
-    },1600);
-  }
-
-
   var mockEl=document.getElementById('mock');
   if(mockEl&&!reduce){
     var tick=false;
@@ -582,7 +545,7 @@ footer{border-top:1px solid var(--border);padding-top:72px;color:var(--muted);fo
     if(e.target.id==='term')typeTerm();
   })},{threshold:.15});
   document.querySelectorAll('.rv,.mock,.spark,#optable').forEach(function(el){io.observe(el)});
-  document.querySelectorAll('.mock .bars').forEach(function(el){io.observe(el)});
+  document.querySelectorAll('.nomatch').forEach(function(el){io.observe(el)});
 
   /* marquee */
   var names=['Proxmox','Docker','Pi-hole','AdGuard Home','UniFi','Synology','TrueNAS','Sonarr','Radarr','Lidarr','Prowlarr','Authentik','Uptime Kuma','Grafana','Weather','Notes','Bookmarks','Host stats'];
