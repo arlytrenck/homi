@@ -1,13 +1,15 @@
 # Changelog
 
-## Unreleased
-- Docker label auto-discovery.
-- Brand kit (docs/brand) applied to the app: logo, theme-aware mark, palette, PWA icons.
-- Playwright e2e suite (27 tests) in CI, including accessibility checks.
-- Fixes: status text contrast, `<main>` landmarks, dragging into empty groups, moving a service forward within a group, success message after changing password, in-page dialogs instead of native prompt/confirm.
-- Plugin SDK, core widgets and 14 integrations.
-- Fix: PATCH requests no longer reset omitted fields to their defaults.
+## 0.1.0 (2026-10-05)
 
-## 0.1.0
-- Initial rewrite on Next.js + TypeScript + SQLite.
-- Service launcher, live checks, uptime history, ops view, YAML backup, auth, PWA manifest, multi-arch image pipeline.
+First release: a rewrite of Homi on Next.js, TypeScript and SQLite.
+
+- **Dashboard**: service launcher with groups, search, keyboard and mouse drag-and-drop, light/dark theme, installable PWA.
+- **Monitoring**: HTTP, TCP and ping checks with live updates, 24h to 90d uptime history, and a dense ops view with kiosk mode.
+- **Widgets and integrations**: plugin SDK, built-in weather, notes, bookmarks and host stats, plus Proxmox, Docker, Pi-hole, AdGuard Home, UniFi, Synology, TrueNAS, Sonarr, Radarr, Lidarr, Prowlarr, Authentik, Uptime Kuma and Grafana. Integrations are tested against mock servers, not yet against live instances.
+- **Docker auto-discovery**: label containers with `homi.enable=true`.
+- **Backup**: YAML export and import with a dry-run preview.
+- **Security**: argon2id login, server-side sessions, CSRF origin checks, login rate limiting, SSRF-guarded outbound requests, encrypted integration secrets, public read-only view (off by default).
+- **Brand kit** in `docs/brand`, applied to the app.
+- **Quality**: 68 unit tests and a 27-test Playwright suite with accessibility checks, run in CI against the production build.
+- **Packaging**: multi-arch (amd64/arm64) image on GHCR, built and smoke-tested in CI.
