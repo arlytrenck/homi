@@ -1,0 +1,1 @@
+ALTER TABLE `services` ADD `missing_since` integer;

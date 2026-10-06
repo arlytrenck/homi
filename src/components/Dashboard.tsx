@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, closestCenter, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { DashboardDTO, GroupDTO, ServiceDTO, Status, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
@@ -28,8 +28,9 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
       <ServiceIcon icon={s.icon} name={s.name} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium" style={{ fontSize: "var(--text-tile)" }}>{s.name}</span>
-        {s.description && <span className="block truncate text-xs text-muted">{s.description}</span>}
+        {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
+      {s.source === "docker" && <Container size={13} className="shrink-0 text-muted" aria-label="Managed by Docker labels" />}
       {st && <StatusDot status={st.status} title={tip} />}
     </>
   );
@@ -41,7 +42,7 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
           <button {...attributes} {...listeners} className="touch-none cursor-grab text-muted" aria-label={`Drag ${s.name}`}><GripVertical size={16} /></button>
           {body}
           <button onClick={onEdit} className="btn !min-h-8 !px-2" aria-label={`Edit ${s.name}`}><Pencil size={14} /></button>
-          <button onClick={onDelete} className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${s.name}`}><Trash2 size={14} /></button>
+          {s.source === "manual" && <button onClick={onDelete} className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${s.name}`}><Trash2 size={14} /></button>}
         </div>
       ) : (
         <a href={s.url} target={s.targetBlank ? "_blank" : undefined} rel="noopener noreferrer" className={cls} style={{ padding: "var(--tile-pad)" }} title={tip}>{body}</a>

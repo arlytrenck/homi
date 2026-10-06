@@ -47,6 +47,7 @@ export const services = sqliteTable("services", {
   tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
   source: text("source", { enum: ["manual", "docker"] }).notNull().default("manual"),
   sourceRef: text("source_ref"),
+  missingSince: integer("missing_since"),
   hiddenPublic: integer("hidden_public", { mode: "boolean" }).notNull().default(false),
   createdAt: ts("created_at"),
   updatedAt: ts("updated_at"),

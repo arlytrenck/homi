@@ -5,7 +5,7 @@ export interface CheckInfo {
 }
 export interface ServiceDTO {
   id: string; groupId: string | null; name: string; description: string | null; url: string; icon: string | null;
-  targetBlank: boolean; tags: string[]; hiddenPublic: boolean; status: CheckInfo | null;
+  targetBlank: boolean; tags: string[]; hiddenPublic: boolean; source: "manual" | "docker"; missing: boolean; status: CheckInfo | null;
 }
 export interface GroupDTO { id: string; name: string; icon: string | null; collapsed: boolean }
 export interface DashboardDTO { groups: GroupDTO[]; services: ServiceDTO[]; widgets: WidgetDTO[]; settings: { title: string; theme: string }; viewer: "admin" | "public" }

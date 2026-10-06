@@ -16,6 +16,9 @@ All server-side requests use `safeFetch`: http(s) only, no URL credentials, DNS 
 ## Secrets at rest
 Secrets use AES-256-GCM with a key derived (HKDF) from `HOMI_SECRET_KEY`, bound to their record via AAD. If you lose the key, stored secrets cannot be recovered. YAML export never includes secrets.
 
+## Docker socket
+Discovery and the Docker widget only issue read-only list requests, but a mounted socket is effectively root on the host even with `:ro`. Prefer a docker-socket-proxy limited to `CONTAINERS=1`. See [docker-labels.md](docker-labels.md).
+
 ## Known limits (v0.1)
 - CSP is not yet nonce-based (Next inline scripts) and no `frame-ancestors` header is set yet.
 - Single replica only (in-process scheduler, SQLite).

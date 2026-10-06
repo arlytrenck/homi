@@ -14,17 +14,20 @@ export type CheckInput = z.infer<typeof CheckInput>;
 
 const httpUrl = z.string().trim().max(2000).refine((u) => { try { return ["http:", "https:"].includes(new URL(u).protocol); } catch { return false; } }, "Must be an http(s) URL");
 
-export const ServiceInput = z.object({
+const serviceShape = {
   groupId: z.string().nullish(),
   name: z.string().trim().min(1).max(100),
   description: z.string().max(300).nullish(),
   url: httpUrl,
   icon: z.string().max(300).nullish(),
-  targetBlank: z.boolean().default(true),
-  tags: z.array(z.string().max(32)).max(16).default([]),
-  hiddenPublic: z.boolean().default(false),
+  targetBlank: z.boolean(),
+  tags: z.array(z.string().max(32)).max(16),
+  hiddenPublic: z.boolean(),
   check: CheckInput.nullish(),
-});
+};
+// Defaults live only on the create schema; patch schemas must not inject them.
+export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false) });
+export const ServicePatch = z.object(serviceShape).partial();
 export type ServiceInput = z.infer<typeof ServiceInput>;
 
 export const GroupInput = z.object({ name: z.string().trim().min(1).max(100), icon: z.string().max(300).nullish(), collapsed: z.boolean().optional() });
@@ -45,16 +48,18 @@ export const SettingsInput = z.object({
 
 const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
 
-export const IntegrationInput = z.object({
+const integrationShape = {
   type: z.string().min(1).max(40),
   name: z.string().trim().min(1).max(100),
   baseUrl,
-  config: z.record(z.string(), z.any()).default({}),
+  config: z.record(z.string(), z.any()),
   /** undefined/omitted = keep, null = clear, string = set */
-  secrets: z.record(z.string(), z.string().nullable()).default({}),
-  ignoreTls: z.boolean().default(false),
-  enabled: z.boolean().default(true),
-});
+  secrets: z.record(z.string(), z.string().nullable()),
+  ignoreTls: z.boolean(),
+  enabled: z.boolean(),
+};
+export const IntegrationInput = z.object({ ...integrationShape, config: integrationShape.config.default({}), secrets: integrationShape.secrets.default({}), ignoreTls: integrationShape.ignoreTls.default(false), enabled: integrationShape.enabled.default(true) });
+export const IntegrationPatch = z.object(integrationShape).omit({ type: true }).partial();
 export type IntegrationInput = z.infer<typeof IntegrationInput>;
 
 export const IntegrationTestInput = z.object({
@@ -66,13 +71,15 @@ export const IntegrationTestInput = z.object({
   ignoreTls: z.boolean().default(false),
 });
 
-export const WidgetInput = z.object({
+const widgetShape = {
   kind: z.string().min(1).max(80),
   integrationId: z.string().nullish(),
   title: z.string().max(100).nullish(),
-  options: z.record(z.string(), z.any()).default({}),
-  area: z.enum(["header", "main", "sidebar"]).default("main"),
-  size: z.enum(["sm", "md", "lg"]).default("md"),
-  hiddenPublic: z.boolean().default(true),
-});
+  options: z.record(z.string(), z.any()),
+  area: z.enum(["header", "main", "sidebar"]),
+  size: z.enum(["sm", "md", "lg"]),
+  hiddenPublic: z.boolean(),
+};
+export const WidgetInput = z.object({ ...widgetShape, options: widgetShape.options.default({}), area: widgetShape.area.default("main"), size: widgetShape.size.default("md"), hiddenPublic: widgetShape.hiddenPublic.default(true) });
+export const WidgetPatch = z.object(widgetShape).omit({ kind: true, integrationId: true }).partial();
 export type WidgetInput = z.infer<typeof WidgetInput>;

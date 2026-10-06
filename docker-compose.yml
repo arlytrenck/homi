@@ -11,9 +11,13 @@ services:
       # Generate with: openssl rand -base64 32
       # HOMI_SECRET_KEY: ${HOMI_SECRET_KEY}
       # HOMI_SETUP_TOKEN: change-me   # require a token on first-run setup
+      # HOMI_DISCOVERY_HOST: nas.lan   # host for URLs derived from published ports
       # HOMI_PUBLIC_URL: https://homi.example.com
       # HOMI_TRUST_PROXY: "1"          # behind a reverse proxy that sets X-Forwarded-*
     volumes:
       - ./data:/data
+      # Optional: Docker auto-discovery (label containers with homi.enable=true).
+      # Prefer a docker-socket-proxy; see docs/docker-labels.md.
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
     cap_add:
       - NET_RAW   # ICMP ping checks

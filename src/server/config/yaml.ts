@@ -22,7 +22,7 @@ const checkOut = (c: typeof checks.$inferSelect | undefined) =>
 export function exportYaml(): string {
   const db = getDb();
   const cs = new Map(db.select().from(checks).all().map((c) => [c.serviceId, c]));
-  const svcs = db.select().from(services).orderBy(asc(services.sort)).all();
+  const svcs = db.select().from(services).where(eq(services.source, "manual")).orderBy(asc(services.sort)).all(); // docker-managed services come from labels, not backups
   const toY = (s: typeof services.$inferSelect) => ({ name: s.name, url: s.url, description: s.description ?? undefined, icon: s.icon ?? undefined, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, check: checkOut(cs.get(s.id)) });
   const doc = {
     version: 1,
