@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inQuietHours, validTimeZone, type QuietHours } from "./quiet";
+import { bypassesQuiet, heldByQuiet, inQuietHours, validTimeZone, type QuietHours } from "./quiet";
 
 const q = (o: Partial<QuietHours> = {}): QuietHours => ({ enabled: true, start: "22:00", end: "07:00", tz: "UTC", digest: true, ...o });
 const at = (iso: string) => Date.parse(iso);
@@ -30,5 +30,21 @@ describe("inQuietHours", () => {
   it("validates time zones", () => {
     expect(validTimeZone("Europe/Berlin")).toBe(true);
     expect(validTimeZone("Mars/Olympus")).toBe(false);
+  });
+});
+
+describe("critical override", () => {
+  const w = q({ overrideTags: ["Critical"] });
+  const night = at("2026-01-10T23:00:00Z");
+  it("lets override-tagged services through, case-insensitively", () => {
+    expect(bypassesQuiet(w, ["critical"])).toBe(true);
+    expect(bypassesQuiet(w, ["media"])).toBe(false);
+    expect(bypassesQuiet(w, [])).toBe(false);
+    expect(bypassesQuiet(q(), ["critical"])).toBe(false); // no override list configured
+  });
+  it("holds everything else inside the window", () => {
+    expect(heldByQuiet(w, ["media"], night)).toBe(true);
+    expect(heldByQuiet(w, ["critical", "media"], night)).toBe(false);
+    expect(heldByQuiet(w, ["media"], at("2026-01-10T12:00:00Z"))).toBe(false);
   });
 });

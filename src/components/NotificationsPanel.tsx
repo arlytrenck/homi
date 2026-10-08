@@ -6,16 +6,16 @@ import { api, ApiClientError } from "@/lib/api-client";
 import type { DashboardDTO } from "@/lib/types";
 
 type Kind = "webhook" | "ntfy";
-interface Quiet { enabled: boolean; start: string; end: string; tz: string; digest: boolean }
+interface Quiet { enabled: boolean; start: string; end: string; tz: string; digest: boolean; overrideTags: string[] }
 interface Dest { id: string; kind: Kind; groupIds: string[]; tags: string[]; quiet: Quiet | null; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
-interface Row { id?: string; kind: Kind; quiet: Quiet; scoped: boolean; groupIds: string[]; tags: string; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
+interface Row { id?: string; kind: Kind; quiet: Quiet; override: string; scoped: boolean; groupIds: string[]; tags: string; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
 const MAX = 5;
 const validTz = (tz: string) => { try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
 const NONE = "__none__";
 const parseTags = (s: string) => [...new Set(s.split(",").map((t) => t.trim()).filter(Boolean))];
 const browserTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "UTC"; } };
-const defaultQuiet = (): Quiet => ({ enabled: false, start: "22:00", end: "07:00", tz: browserTz(), digest: true });
-const blank = (): Row => ({ kind: "webhook", quiet: defaultQuiet(), scoped: false, groupIds: [], tags: "", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
+const defaultQuiet = (): Quiet => ({ enabled: false, start: "22:00", end: "07:00", tz: browserTz(), digest: true, overrideTags: [] });
+const blank = (): Row => ({ kind: "webhook", quiet: defaultQuiet(), override: "", scoped: false, groupIds: [], tags: "", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
 
 export function NotificationsPanel() {
@@ -26,7 +26,7 @@ export function NotificationsPanel() {
   const knownTags = [...new Set((dash?.services ?? []).flatMap((s) => s.tags))].sort();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [note, setNote] = useState("");
-  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "", quiet: d.quiet ?? defaultQuiet(), tags: d.tags.join(", "), scoped: d.groupIds.length + d.tags.length > 0 })) : [blank()]); }, [data]);
+  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "", quiet: d.quiet ?? defaultQuiet(), override: (d.quiet?.overrideTags ?? []).join(", "), tags: d.tags.join(", "), scoped: d.groupIds.length + d.tags.length > 0 })) : [blank()]); }, [data]);
   if (!rows) return null;
   const set = (i: number, patch: Partial<Row>) => setRows((r) => r!.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const many = rows.length > 1;
@@ -40,7 +40,7 @@ export function NotificationsPanel() {
         e.preventDefault(); setNote("");
         const badTz = rows.find((r) => r.quiet.enabled && !validTz(r.quiet.tz));
         if (badTz) { setNote(`Unknown time zone “${badTz.quiet.tz}” (use e.g. Europe/Berlin)`); return; }
-        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery, groupIds: r.scoped ? r.groupIds : [], tags: r.scoped ? parseTags(r.tags) : [], quiet: r.quiet }));
+        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery, groupIds: r.scoped ? r.groupIds : [], tags: r.scoped ? parseTags(r.tags) : [], quiet: { ...r.quiet, overrideTags: parseTags(r.override) } }));
         try { await api("/api/notifications", { method: "PUT", body: { destinations } }); await qc.invalidateQueries({ queryKey: ["notifications"] }); setNote("Saved"); } catch (x) { setNote(msg(x)); }
       }}>
         {rows.map((r, i) => (
@@ -77,7 +77,8 @@ export function NotificationsPanel() {
                   <div><label className="label" htmlFor={`n-qe-${i}`}>Until</label><input id={`n-qe-${i}`} type="time" className="input" value={r.quiet.end} onChange={(e) => set(i, { quiet: { ...r.quiet, end: e.target.value } })} /></div>
                   <div><label className="label" htmlFor={`n-qz-${i}`}>Time zone</label><input id={`n-qz-${i}`} className="input" value={r.quiet.tz} onChange={(e) => set(i, { quiet: { ...r.quiet, tz: e.target.value } })} /></div>
                   <label className="flex items-center gap-2 text-sm sm:col-span-3"><input type="checkbox" checked={r.quiet.digest} onChange={(e) => set(i, { quiet: { ...r.quiet, digest: e.target.checked } })} /> Send one summary of services still down when quiet hours end</label>
-                  <p className="text-xs text-muted sm:col-span-3">Alerts, including recoveries, raised inside the window are not sent. Windows can cross midnight.</p>
+                  <div className="sm:col-span-3"><label className="label" htmlFor={`n-qo-${i}`}>Always alert for tags (comma-separated)</label><input id={`n-qo-${i}`} className="input" list="n-known-tags" placeholder="e.g. critical" value={r.override} onChange={(e) => set(i, { override: e.target.value })} /></div>
+                  <p className="text-xs text-muted sm:col-span-3">Services with one of these tags are alerted even during quiet hours. Other alerts, including recoveries, raised inside the window are not sent. Windows can cross midnight.</p>
                 </div>
               )}
             </div>

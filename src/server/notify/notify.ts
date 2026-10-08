@@ -4,7 +4,7 @@ import type { Db } from "@/server/db/client";
 import { checks, services, settings } from "@/server/db/schema";
 import { decryptSecrets, encryptSecrets } from "@/server/crypto/secretbox";
 import { safeFetch } from "@/server/net/safeFetch";
-import { inQuietHours, type QuietHours } from "./quiet";
+import { bypassesQuiet, heldByQuiet, inQuietHours, type QuietHours } from "./quiet";
 
 export type NotifyKind = "webhook" | "ntfy";
 /** Stored form: the URL usually embeds a secret (ntfy topic, Discord/Slack token), so it is sealed. */
@@ -67,7 +67,7 @@ export async function deliver(kind: NotifyKind, url: string, e: NotifyEvent): Pr
 /** Fire-and-forget: never throws; each destination is independent and its outcome is recorded for the Settings page. */
 export async function notifyTransition(db: Db, e: NotifyEvent): Promise<void> {
   let dests: Destination[];
-  try { dests = readDestinations(db).filter((d) => d.enabled && d.urlSealed && (e.kind !== "recovered" || d.onRecovery) && routesTo(d, e.groupId, e.tags) && !inQuietHours(d.quiet)); } catch { return; }
+  try { dests = readDestinations(db).filter((d) => d.enabled && d.urlSealed && (e.kind !== "recovered" || d.onRecovery) && routesTo(d, e.groupId, e.tags) && !heldByQuiet(d.quiet, e.tags)); } catch { return; }
   await Promise.all(dests.map(async (d) => {
     try { await deliver(d.kind, openUrl(d.urlSealed!), e); (g.__homiNotify ??= {})[d.id] = { ts: Date.now(), ok: true }; }
     catch (err) {
@@ -97,7 +97,7 @@ export async function digestTick(db: Db, now = Date.now()): Promise<void> {
     const since = startedAt;
     const down = db.select({ name: services.name, muted: services.alertsMuted, groupId: services.groupId, tags: services.tags }).from(checks)
       .innerJoin(services, eq(services.id, checks.serviceId)).where(and(eq(checks.lastStatus, "down"), gte(checks.lastChangeAt, since))).all()
-      .filter((s) => !s.muted && routesTo(d, s.groupId, s.tags));
+      .filter((s) => !s.muted && routesTo(d, s.groupId, s.tags) && !bypassesQuiet(d.quiet, s.tags)); // override-tag services were alerted live
     if (!down.length) continue;
     try { await deliver(d.kind, openUrl(d.urlSealed), { kind: "digest", name: "Homi", status: "down", previous: "down", services: down.map((s) => s.name), ts: now }); (g.__homiNotify ??= {})[d.id] = { ts: now, ok: true }; }
     catch (err) { (g.__homiNotify ??= {})[d.id] = { ts: now, ok: false, error: err instanceof Error ? err.message : String(err) }; }

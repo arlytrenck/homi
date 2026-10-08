@@ -139,6 +139,20 @@ describe("quiet hours", () => {
     vi.useRealTimers();
   });
 
+  it("lets override-tagged services through quiet hours", async () => {
+    const db = openDb(":memory:").db; runMigrations(db);
+    writeDestinations(db, [dest("night", { quiet: { ...quiet, overrideTags: ["critical"] } })]);
+    vi.useFakeTimers(); vi.setSystemTime(Date.parse("2026-01-10T23:00:00Z"));
+    const n = got.length;
+    await notifyTransition(db, { ...ev, tags: ["media"] });
+    expect(got.length - n).toBe(0);
+    await notifyTransition(db, { ...ev, tags: ["Critical"] });
+    expect(got.length - n).toBe(1);
+    await notifyTransition(db, { ...ev, kind: "recovered", tags: ["critical"] });
+    expect(got.length - n).toBe(2); // recoveries bypass too
+    vi.useRealTimers();
+  });
+
   it("sends one summary of still-down, routed, unmuted services when the window ends", async () => {
     const db = openDb(":memory:").db; runMigrations(db);
     const t = (iso: string) => Date.parse(iso);
@@ -147,8 +161,9 @@ describe("quiet hours", () => {
     svc("a", "Plex"); chk("a", "down", t("2026-01-10T23:30:00Z"));          // went down in the window
     svc("b", "Old"); chk("b", "down", t("2026-01-09T10:00:00Z"));           // down long before: not part of this summary
     svc("c", "Quiet", { alertsMuted: true }); chk("c", "down", t("2026-01-10T23:40:00Z")); // muted
+    svc("e", "Critical one", { tags: ["critical"] }); chk("e", "down", t("2026-01-10T23:45:00Z")); // alerted live, so not repeated
     svc("d", "Healed"); chk("d", "up", t("2026-01-11T01:00:00Z"));          // recovered
-    writeDestinations(db, [dest("digest")]);
+    writeDestinations(db, [dest("digest", { quiet: { ...quiet, overrideTags: ["critical"] } })]);
     const n = got.length;
     await digestTick(db, t("2026-01-10T21:00:00Z")); // outside: learn state
     await digestTick(db, t("2026-01-10T22:00:00Z")); // window starts

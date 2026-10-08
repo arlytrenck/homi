@@ -1,4 +1,4 @@
-export interface QuietHours { enabled: boolean; start: string; end: string; tz: string; digest: boolean }
+export interface QuietHours { enabled: boolean; start: string; end: string; tz: string; digest: boolean; /** services carrying any of these tags are alerted even inside the window (case-insensitive) */ overrideTags?: string[] }
 
 const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
 
@@ -19,3 +19,12 @@ export function inQuietHours(q: QuietHours | undefined, now = Date.now()): boole
   const t = localMinutes(now, validTimeZone(q.tz) ? q.tz : "UTC");
   return s < e ? t >= s && t < e : t >= s || t < e;
 }
+
+/** A critical service (carries an override tag) is never held back by quiet hours. */
+export const bypassesQuiet = (q: QuietHours | undefined, tags: string[] = []) => {
+  const o = (q?.overrideTags ?? []).map((t) => t.toLowerCase());
+  return o.length > 0 && tags.some((t) => o.includes(t.toLowerCase()));
+};
+
+/** True if an alert for a service with `tags` must be held right now. */
+export const heldByQuiet = (q: QuietHours | undefined, tags: string[] | undefined, now = Date.now()) => inQuietHours(q, now) && !bypassesQuiet(q, tags);

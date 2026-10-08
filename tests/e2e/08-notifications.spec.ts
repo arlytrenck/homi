@@ -104,6 +104,7 @@ test("quiet hours can be set per destination and survive a reload", async ({ pag
   await row().getByLabel(/Quiet hours/).check();
   await row().getByLabel("From").fill("23:00");
   await row().getByLabel("Until").fill("06:30");
+  await row().getByLabel("Always alert for tags").fill("critical, edge");
   await row().getByLabel("Time zone").fill("Mars/Olympus");
   await save();
   await expect(panel.getByText(/Unknown time zone/)).toBeVisible();
@@ -114,6 +115,7 @@ test("quiet hours can be set per destination and survive a reload", async ({ pag
   await expect(row().getByLabel("From")).toHaveValue("23:00");
   await expect(row().getByLabel("Until")).toHaveValue("06:30");
   await expect(row().getByLabel("Time zone")).toHaveValue("Europe/Berlin");
+  await expect(row().getByLabel("Always alert for tags")).toHaveValue("critical, edge");
   await row().getByLabel(/Quiet hours/).uncheck();
   await save();
   await expect(panel.getByRole("status").last()).toHaveText("Saved");

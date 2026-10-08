@@ -66,6 +66,7 @@ export const NotificationsInput = z.object({
       end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
       tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
       digest: z.boolean(),
+      overrideTags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
     }).optional(),
   })).max(5),
 });
