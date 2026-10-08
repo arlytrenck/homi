@@ -1,17 +1,19 @@
 import { desc, eq } from "drizzle-orm";
 import { ApiError, route } from "@/server/api";
 import { getDb } from "@/server/db/client";
-import { groups, maintenanceWindows, services } from "@/server/db/schema";
+import { groups, maintenanceSchedules, maintenanceWindows, services } from "@/server/db/schema";
 import { MaintenanceInput } from "@/lib/schemas";
 import { newId } from "@/server/auth/session";
 import { changed } from "@/server/data";
+import { activeOccurrence, describeRecurrence } from "@/server/schedule";
 export const dynamic = "force-dynamic";
 
 export const GET = route({ auth: "admin" }, () => {
   const db = getDb();
   const names = new Map([...db.select().from(groups).all().map((g) => [g.id, g.name] as const), ...db.select().from(services).all().map((s) => [s.id, s.name] as const)]);
   const now = Date.now();
-  return { windows: db.select().from(maintenanceWindows).orderBy(desc(maintenanceWindows.startsAt)).all().filter((w) => w.endsAt > now).map((w) => ({ id: w.id, name: w.name, kind: w.kind, targetId: w.targetId, targetName: w.kind === "all" ? "Everything" : names.get(w.targetId ?? "") ?? "(deleted)", startsAt: w.startsAt, endsAt: w.endsAt, active: w.startsAt <= now })) };
+  return { windows: db.select().from(maintenanceWindows).orderBy(desc(maintenanceWindows.startsAt)).all().filter((w) => w.endsAt > now).map((w) => ({ id: w.id, name: w.name, kind: w.kind, targetId: w.targetId, targetName: w.kind === "all" ? "Everything" : names.get(w.targetId ?? "") ?? "(deleted)", startsAt: w.startsAt, endsAt: w.endsAt, active: w.startsAt <= now })),
+    schedules: db.select().from(maintenanceSchedules).all().map((s) => ({ id: s.id, name: s.name, kind: s.kind, targetId: s.targetId, targetName: s.kind === "all" ? "Everything" : names.get(s.targetId ?? "") ?? "(deleted)", summary: describeRecurrence(s), enabled: s.enabled, active: s.enabled && !!activeOccurrence({ days: s.days, startTime: s.startTime, durationMin: s.durationMin, tz: s.tz }, now) })) };
 });
 
 export const POST = route({ auth: "admin", body: MaintenanceInput }, ({ body }) => {

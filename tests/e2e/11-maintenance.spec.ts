@@ -28,3 +28,40 @@ test("an admin can hold alerts for a service from its detail dialog", async ({ p
   await page.goto("/settings");
   await page.getByRole("button", { name: "End maintenance for Homi itself" }).click();
 });
+
+test("a weekly schedule runs, can be paused and deleted", async ({ page }) => {
+  await page.goto("/settings");
+  const panel = page.locator("section", { has: page.getByRole("heading", { name: "Maintenance windows" }) });
+  await panel.getByLabel("Covers").selectOption("service");
+  await panel.getByLabel("Service", { exact: true }).selectOption({ label: "Homi itself" });
+  await panel.getByLabel("Repeat weekly").check();
+  for (const d of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]) await panel.getByRole("group", { name: "Days" }).getByLabel(d, { exact: true }).check(); // Sunday is on by default
+  await panel.getByLabel("Starts at").fill("00:00");
+  await panel.getByLabel("For").selectOption({ label: "1 day" });
+  await panel.getByRole("button", { name: "Add schedule" }).click();
+  const row = panel.getByRole("list", { name: "Weekly schedules" }).getByRole("listitem");
+  await expect(row).toContainText("Every day 00:00–00:00");
+  await expect(row).toContainText("running now");
+
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Homi itself/ }).getByText("Maintenance")).toBeVisible();
+
+  await page.goto("/settings");
+  await panel.getByRole("button", { name: "Pause schedule for Homi itself" }).click();
+  await expect(row).toContainText("paused");
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /Homi itself/ }).getByText("Maintenance")).toBeHidden();
+
+  await page.goto("/settings");
+  await panel.getByRole("button", { name: "Delete schedule for Homi itself" }).click();
+  await expect(panel.getByRole("list", { name: "Weekly schedules" })).toHaveCount(0);
+});
+
+test("a weekly schedule with an unknown time zone is rejected with a message", async ({ page }) => {
+  await page.goto("/settings");
+  const panel = page.locator("section", { has: page.getByRole("heading", { name: "Maintenance windows" }) });
+  await panel.getByLabel("Repeat weekly").check();
+  await panel.getByLabel("Time zone").fill("Mars/Olympus");
+  await panel.getByRole("button", { name: "Add schedule" }).click();
+  await expect(panel.getByText(/Unknown time zone/)).toBeVisible();
+});

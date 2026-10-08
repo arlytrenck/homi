@@ -43,6 +43,13 @@
       "when": 1791427300669,
       "tag": "0005_same_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791428763584,
+      "tag": "0006_legal_gideon",
+      "breakpoints": true
     }
   ]
 }

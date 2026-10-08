@@ -124,3 +124,14 @@ export const MaintenanceInput = z.object({
   minutes: z.number().int().min(1).max(60 * 24 * 30).optional(),
 }).refine((v) => v.kind === "all" || !!v.targetId, { message: "Pick a service or group", path: ["targetId"] })
   .refine((v) => (v.endsAt !== undefined) !== (v.minutes !== undefined), { message: "Give either an end time or a duration", path: ["minutes"] });
+
+export const MaintenanceScheduleInput = z.object({
+  name: z.string().trim().max(100).optional(),
+  kind: z.enum(["all", "group", "service"]),
+  targetId: z.string().max(40).optional(),
+  /** 0 = Sunday … 6 = Saturday */
+  days: z.array(z.number().int().min(0).max(6)).min(1, "Pick at least one day").max(7),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  durationMin: z.number().int().min(1).max(48 * 60),
+  tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
+}).refine((v) => v.kind === "all" || !!v.targetId, { message: "Pick a service or group", path: ["targetId"] });

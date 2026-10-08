@@ -190,3 +190,19 @@ export const incidents = sqliteTable(
   },
   (t) => [index("incidents_started").on(t.startedAt), index("incidents_check").on(t.checkId, t.startedAt)],
 );
+
+/** Weekly recurring maintenance: while an occurrence is running it behaves like a maintenance window. */
+export const maintenanceSchedules = sqliteTable("maintenance_schedules", {
+  id: id(),
+  name: text("name").notNull(),
+  kind: text("kind", { enum: ["all", "group", "service"] }).notNull(),
+  targetId: text("target_id"),
+  days: text("days", { mode: "json" }).$type<number[]>().notNull(),
+  startTime: text("start_time").notNull(),
+  durationMin: integer("duration_min").notNull(),
+  tz: text("tz").notNull(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  /** occurrences that ended at or before this have had their "still down" follow-up considered */
+  handledUntil: integer("handled_until").notNull(),
+  createdAt: ts("created_at"),
+});
