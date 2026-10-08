@@ -54,3 +54,22 @@ test("a second destination can be added, saved and removed", async ({ page }) =>
   await page.reload();
   await expect(panel.locator("fieldset")).toHaveCount(1);
 });
+
+test("a destination can be limited to selected groups", async ({ page }) => {
+  await page.goto("/settings");
+  const panel = page.locator("section", { has: page.getByRole("heading", { name: "Alerts" }) });
+  const row = panel.locator("fieldset").first();
+  await row.getByLabel("Alert for").selectOption("groups");
+  await expect(row.getByText("No group selected")).toBeVisible();
+  await row.getByRole("group").getByLabel("Infrastructure").check();
+  await expect(row.getByText("No group selected")).toBeHidden();
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+  await page.reload();
+  const again = panel.locator("fieldset").first();
+  await expect(again.getByLabel("Alert for")).toHaveValue("groups");
+  await expect(again.getByRole("group").getByLabel("Infrastructure")).toBeChecked();
+  await again.getByLabel("Alert for").selectOption("all");
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+});

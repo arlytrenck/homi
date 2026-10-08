@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { classify, deliver, describe as describeEvent, notifyTransition, readDestinations, sealUrl, writeDestinations } from "./notify";
+import { classify, deliver, describe as describeEvent, notifyTransition, pruneGroup, readDestinations, routesTo, sealUrl, writeDestinations } from "./notify";
 import { openDb, runMigrations } from "@/server/db/client";
 import { settings } from "@/server/db/schema";
 import path from "node:path";
@@ -54,6 +54,14 @@ describe("deliver", () => {
     const before = got.length;
     await notifyTransition(db, ev);
     expect(got.length - before).toBe(2);
+    writeDestinations(db, [
+      { id: "a", kind: "webhook", urlSealed: sealUrl(`${url}/media`), enabled: true, onRecovery: true, groupIds: ["media"] },
+      { id: "b", kind: "webhook", urlSealed: sealUrl(`${url}/infra`), enabled: true, onRecovery: true, groupIds: ["infra"] },
+      { id: "c", kind: "webhook", urlSealed: sealUrl(`${url}/all`), enabled: true, onRecovery: true },
+    ]);
+    const mark = got.length;
+    await notifyTransition(db, { ...ev, groupId: "media" });
+    expect(got.length - mark).toBe(2); // media + catch-all, not infra
   });
   it("describes recovery with downtime", () => {
     expect(describeEvent({ ...ev, kind: "recovered", status: "up", downForMs: 7 * 60_000 }).text).toBe("Plex is back up after 7 min");
@@ -72,5 +80,23 @@ describe("destinations storage", () => {
     const d = [{ id: "a", kind: "webhook" as const, urlSealed: "1", enabled: true, onRecovery: true }, { id: "b", kind: "ntfy" as const, urlSealed: "2", enabled: false, onRecovery: true }];
     writeDestinations(db, d);
     expect(readDestinations(db)).toEqual(d);
+  });
+});
+
+describe("group routing", () => {
+  it("routes by group; empty means everything; ungrouped is its own target", () => {
+    expect(routesTo({}, "g1")).toBe(true);
+    expect(routesTo({ groupIds: [] }, null)).toBe(true);
+    expect(routesTo({ groupIds: ["g1"] }, "g1")).toBe(true);
+    expect(routesTo({ groupIds: ["g1"] }, "g2")).toBe(false);
+    expect(routesTo({ groupIds: ["g1"] }, null)).toBe(false);
+    expect(routesTo({ groupIds: ["__none__"] }, undefined)).toBe(true);
+  });
+  it("deleting a group removes it from destinations", () => {
+    process.env.HOMI_MIGRATIONS = path.resolve("drizzle");
+    const db = openDb(":memory:").db; runMigrations(db);
+    writeDestinations(db, [{ id: "a", kind: "webhook", urlSealed: "1", enabled: true, onRecovery: true, groupIds: ["g1", "g2"] }, { id: "b", kind: "ntfy", urlSealed: "2", enabled: true, onRecovery: true }]);
+    pruneGroup(db, "g1");
+    expect(readDestinations(db).map((d) => d.groupIds)).toEqual([["g2"], undefined]);
   });
 });

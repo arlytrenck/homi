@@ -7,8 +7,8 @@ import { safeFetch } from "@/server/net/safeFetch";
 
 export type NotifyKind = "webhook" | "ntfy";
 /** Stored form: the URL usually embeds a secret (ntfy topic, Discord/Slack token), so it is sealed. */
-export interface Destination { id: string; kind: NotifyKind; urlSealed: string | null; enabled: boolean; onRecovery: boolean }
-export interface NotifyEvent { kind: "down" | "recovered"; name: string; status: string; previous: string; target?: string; error?: string; downForMs?: number; ts: number }
+export interface Destination { id: string; kind: NotifyKind; urlSealed: string | null; enabled: boolean; onRecovery: boolean; /** empty/absent = every service; otherwise only these groups ("__none__" = ungrouped) */ groupIds?: string[] }
+export interface NotifyEvent { groupId?: string | null; kind: "down" | "recovered"; name: string; status: string; previous: string; target?: string; error?: string; downForMs?: number; ts: number }
 export interface DeliveryResult { ts: number; ok: boolean; error?: string }
 
 const AAD = "notifications:url";
@@ -27,6 +27,16 @@ export function readDestinations(db: Db): Destination[] {
   if (Array.isArray(v.destinations)) return v.destinations;
   return v.kind ? [{ id: "d1", kind: v.kind, urlSealed: v.urlSealed ?? null, enabled: !!v.enabled, onRecovery: v.onRecovery ?? true }] : [];
 }
+export const UNGROUPED = "__none__";
+export const routesTo = (d: Pick<Destination, "groupIds">, groupId: string | null | undefined) => !d.groupIds?.length || d.groupIds.includes(groupId ?? UNGROUPED);
+
+/** A deleted group must not leave a destination silently scoped to nothing. */
+export function pruneGroup(db: Db, groupId: string) {
+  const all = readDestinations(db);
+  if (!all.some((d) => d.groupIds?.includes(groupId))) return;
+  writeDestinations(db, all.map((d) => (d.groupIds?.includes(groupId) ? { ...d, groupIds: d.groupIds.filter((id) => id !== groupId) } : d)));
+}
+
 export function writeDestinations(db: Db, destinations: Destination[]) {
   const value = { destinations } as any;
   db.insert(settings).values({ key: KEY, value }).onConflictDoUpdate({ target: settings.key, set: { value } }).run();
@@ -51,7 +61,7 @@ export async function deliver(kind: NotifyKind, url: string, e: NotifyEvent): Pr
 /** Fire-and-forget: never throws; each destination is independent and its outcome is recorded for the Settings page. */
 export async function notifyTransition(db: Db, e: NotifyEvent): Promise<void> {
   let dests: Destination[];
-  try { dests = readDestinations(db).filter((d) => d.enabled && d.urlSealed && (e.kind === "down" || d.onRecovery)); } catch { return; }
+  try { dests = readDestinations(db).filter((d) => d.enabled && d.urlSealed && (e.kind === "down" || d.onRecovery) && routesTo(d, e.groupId)); } catch { return; }
   await Promise.all(dests.map(async (d) => {
     try { await deliver(d.kind, openUrl(d.urlSealed!), e); (g.__homiNotify ??= {})[d.id] = { ts: Date.now(), ok: true }; }
     catch (err) {

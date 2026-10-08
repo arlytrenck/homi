@@ -3,20 +3,24 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
+import type { DashboardDTO } from "@/lib/types";
 
 type Kind = "webhook" | "ntfy";
-interface Dest { id: string; kind: Kind; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
-interface Row { id?: string; kind: Kind; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
+interface Dest { id: string; kind: Kind; groupIds: string[]; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
+interface Row { id?: string; kind: Kind; scoped: boolean; groupIds: string[]; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
 const MAX = 5;
-const blank = (): Row => ({ kind: "webhook", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
+const NONE = "__none__";
+const blank = (): Row => ({ kind: "webhook", scoped: false, groupIds: [], url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
 
 export function NotificationsPanel() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["notifications"], queryFn: () => api<{ destinations: Dest[] }>("/api/notifications") });
+  const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard") });
+  const groups = dash?.groups ?? [];
   const [rows, setRows] = useState<Row[] | null>(null);
   const [note, setNote] = useState("");
-  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "" })) : [blank()]); }, [data]);
+  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "", scoped: d.groupIds.length > 0 })) : [blank()]); }, [data]);
   if (!rows) return null;
   const set = (i: number, patch: Partial<Row>) => setRows((r) => r!.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const many = rows.length > 1;
@@ -27,7 +31,7 @@ export function NotificationsPanel() {
       <p className="text-sm text-muted">Get a message when a service goes down, and when it comes back. Add up to {MAX} destinations. URLs are stored encrypted.</p>
       <form className="space-y-3" onSubmit={async (e) => {
         e.preventDefault(); setNote("");
-        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery }));
+        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery, groupIds: r.scoped ? r.groupIds : [] }));
         try { await api("/api/notifications", { method: "PUT", body: { destinations } }); await qc.invalidateQueries({ queryKey: ["notifications"] }); setNote("Saved"); } catch (x) { setNote(msg(x)); }
       }}>
         {rows.map((r, i) => (
@@ -39,6 +43,18 @@ export function NotificationsPanel() {
               <input id={`n-url-${i}`} type="url" className="input" placeholder={r.urlSet ? "••••••••" : "https://"} autoComplete="off" value={r.url} onChange={(e) => set(i, { url: e.target.value })} /></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} /> Send alerts</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.onRecovery} onChange={(e) => set(i, { onRecovery: e.target.checked })} /> Also notify on recovery</label>
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor={`n-scope-${i}`}>Alert for</label>
+              <select id={`n-scope-${i}`} className="input sm:!w-auto" value={r.scoped ? "groups" : "all"} onChange={(e) => set(i, { scoped: e.target.value === "groups" })}><option value="all">All services</option><option value="groups">Only selected groups</option></select>
+              {r.scoped && (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label={`Groups for destination ${i + 1}`}>
+                  {[...groups.map((g) => ({ id: g.id, name: g.name })), { id: NONE, name: "Ungrouped" }].map((g) => (
+                    <label key={g.id} className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={r.groupIds.includes(g.id)} onChange={(e) => set(i, { groupIds: e.target.checked ? [...r.groupIds, g.id] : r.groupIds.filter((x) => x !== g.id) })} /> {g.name}</label>
+                  ))}
+                  {!r.groupIds.length && <p className="w-full text-xs text-warn-fg">No group selected: this destination will receive alerts for all services.</p>}
+                </div>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
               <button type="button" className="btn" onClick={async () => {
                 set(i, { note: "Sending…" });

@@ -86,8 +86,8 @@ export class Scheduler {
       ...(changed ? { lastChangeAt: now } : {}),
     }).where(eq(checks.id, checkId)).run();
     const kind = classify(c.lastStatus, n.status);
-    const muted = kind && c.serviceId ? this.db.select({ m: services.alertsMuted }).from(services).where(eq(services.id, c.serviceId)).get()?.m : false;
-    if (kind && !muted) void notifyTransition(this.db, { kind, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
+    const svc = kind && c.serviceId ? this.db.select({ muted: services.alertsMuted, groupId: services.groupId }).from(services).where(eq(services.id, c.serviceId)).get() : undefined;
+    if (kind && !svc?.muted) void notifyTransition(this.db, { kind, groupId: svc?.groupId, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
   }
