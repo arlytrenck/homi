@@ -47,6 +47,15 @@ export const SettingsInput = z.object({
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
 
+export const NotificationsInput = z.object({
+  enabled: z.boolean(),
+  kind: z.enum(["webhook", "ntfy"]),
+  /** omitted = keep the stored URL */
+  url: z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL").optional(),
+  onRecovery: z.boolean(),
+});
+export const NotificationsTest = z.object({ kind: z.enum(["webhook", "ntfy"]).optional(), url: NotificationsInput.shape.url });
+
 const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
 
 const integrationShape = {

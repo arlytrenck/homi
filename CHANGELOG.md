@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Alerts**: webhook (Discord, Slack, Home Assistant, any JSON receiver) or ntfy notification when a service goes down and when it recovers. Configure under Settings → Alerts; the URL is stored encrypted.
+- **Service details**: per-service uptime and latency charts (24h to 90d) from the dashboard.
+- **Checks**: choose GET or HEAD for HTTP checks.
+- **Fixes**: discovery no longer resets check schedules every 30 seconds; SSRF guard now blocks IPv4-mapped IPv6 forms; credentials are not forwarded on cross-origin redirects; the ops view no longer refetches on every status event.
+
 ## 0.1.0 (2026-10-05)
 
 First release: a rewrite of Homi on Next.js, TypeScript and SQLite.

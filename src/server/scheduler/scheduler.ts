@@ -5,6 +5,7 @@ import { checks, checkResults, checkRollups } from "@/server/db/schema";
 import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
+import { classify, notifyTransition } from "@/server/notify/notify";
 
 type Check = typeof checks.$inferSelect;
 const HOUR = 3600_000;
@@ -84,6 +85,8 @@ export class Scheduler {
       lastStatus: n.status, consecutiveFailures: n.failures, lastLatencyMs: o.latencyMs, lastCheckedAt: now,
       ...(changed ? { lastChangeAt: now } : {}),
     }).where(eq(checks.id, checkId)).run();
+    const kind = classify(c.lastStatus, n.status);
+    if (kind) void notifyTransition(this.db, { kind, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
   }
