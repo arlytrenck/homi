@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validTimeZone } from "@/server/notify/quiet";
 
 export const CheckInput = z.object({
   type: z.enum(["http", "tcp", "ping"]),
@@ -59,6 +60,13 @@ export const NotificationsInput = z.object({
     onRecovery: z.boolean(),
     groupIds: z.array(z.string().max(40)).max(200).default([]),
     tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+    quiet: z.object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
+      digest: z.boolean(),
+    }).optional(),
   })).max(5),
 });
 export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });

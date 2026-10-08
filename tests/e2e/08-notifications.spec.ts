@@ -95,3 +95,26 @@ test("tags can be set on a service and used to route alerts", async ({ page }) =
   await panel.getByRole("button", { name: "Save", exact: true }).click();
   await expect(panel.getByRole("status").last()).toHaveText("Saved");
 });
+
+test("quiet hours can be set per destination and survive a reload", async ({ page }) => {
+  await page.goto("/settings");
+  const panel = page.locator("section", { has: page.getByRole("heading", { name: "Alerts" }) });
+  const row = () => panel.locator("fieldset").first();
+  const save = async () => { await panel.getByRole("button", { name: "Save", exact: true }).click(); };
+  await row().getByLabel(/Quiet hours/).check();
+  await row().getByLabel("From").fill("23:00");
+  await row().getByLabel("Until").fill("06:30");
+  await row().getByLabel("Time zone").fill("Mars/Olympus");
+  await save();
+  await expect(panel.getByText(/Unknown time zone/)).toBeVisible();
+  await row().getByLabel("Time zone").fill("Europe/Berlin");
+  await save();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+  await page.reload();
+  await expect(row().getByLabel("From")).toHaveValue("23:00");
+  await expect(row().getByLabel("Until")).toHaveValue("06:30");
+  await expect(row().getByLabel("Time zone")).toHaveValue("Europe/Berlin");
+  await row().getByLabel(/Quiet hours/).uncheck();
+  await save();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+});

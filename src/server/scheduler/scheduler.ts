@@ -5,7 +5,7 @@ import { checks, checkResults, checkRollups, services } from "@/server/db/schema
 import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
-import { classify, notifyTransition } from "@/server/notify/notify";
+import { classify, digestTick, notifyTransition } from "@/server/notify/notify";
 
 type Check = typeof checks.$inferSelect;
 const HOUR = 3600_000;
@@ -28,6 +28,7 @@ export class Scheduler {
   private buffer: { checkId: string; ts: number; o: CheckOutcome }[] = [];
   private flushTimer?: NodeJS.Timeout;
   private lastMaint = 0;
+  private lastDigest = 0;
   private stopped = false;
 
   constructor(private db: Db = getDb(), private run: typeof runCheck = runCheck) {}
@@ -62,6 +63,7 @@ export class Scheduler {
       }
       if ((this.next.get(c.id) ?? 0) <= now && !this.running.has(c.id) && this.active < MAX_CONCURRENCY) void this.exec(c);
     }
+    if (now - this.lastDigest > 30_000) { this.lastDigest = now; void digestTick(this.db, now).catch((e) => console.error("[homi] digest failed", e)); }
     if (now - this.lastMaint > 10 * 60_000) { this.lastMaint = now; this.maintenance(now); }
   }
 
