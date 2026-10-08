@@ -2,7 +2,7 @@ import { z } from "zod";
 import { validTimeZone } from "@/server/notify/quiet";
 
 export const CheckInput = z.object({
-  type: z.enum(["http", "tcp", "ping"]),
+  type: z.enum(["http", "tcp", "ping", "tls", "heartbeat"]),
   target: z.string().trim().min(1).max(500),
   intervalS: z.number().int().min(10).max(86400).default(60),
   timeoutMs: z.number().int().min(500).max(30000).default(5000),

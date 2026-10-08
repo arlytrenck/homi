@@ -17,6 +17,7 @@ export type Status = "up" | "down" | "degraded" | "unknown";
 export function nextStatus(prev: Status, failures: number, o: CheckOutcome): { status: Status; failures: number } {
   if (o.ok) return { status: o.degraded ? "degraded" : "up", failures: 0 };
   const f = failures + 1;
+  if (o.immediate) return { status: "down", failures: f };
   return { status: f >= 2 || prev === "unknown" ? "down" : prev, failures: f };
 }
 
@@ -61,10 +62,20 @@ export class Scheduler {
         for (const ch of c.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
         this.next.set(c.id, now + (h % Math.min(c.intervalS * 1000, 5000)));
       }
+      if (c.type === "heartbeat") {
+        if ((this.next.get(c.id) ?? 0) <= now) { this.next.set(c.id, now + Math.min(c.intervalS, 30) * 1000); this.checkHeartbeat(c, now); }
+        continue;
+      }
       if ((this.next.get(c.id) ?? 0) <= now && !this.running.has(c.id) && this.active < MAX_CONCURRENCY) void this.exec(c);
     }
     if (now - this.lastDigest > 30_000) { this.lastDigest = now; void digestTick(this.db, now).catch((e) => console.error("[homi] digest failed", e)); }
     if (now - this.lastMaint > 10 * 60_000) { this.lastMaint = now; this.maintenance(now); }
+  }
+
+  /** Push check: overdue = no ping within the interval plus 25%. Waits for the first ping before judging. */
+  private checkHeartbeat(c: Check, now: number) {
+    if (c.lastPingAt == null || now - c.lastPingAt <= c.intervalS * 1250) return;
+    this.record(c.id, { ok: false, latencyMs: null, error: "no heartbeat received", immediate: true }, now);
   }
 
   private async exec(c: Check) {

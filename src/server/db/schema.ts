@@ -58,7 +58,10 @@ export const checks = sqliteTable("checks", {
   id: id(),
   serviceId: text("service_id").unique().references(() => services.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  type: text("type", { enum: ["http", "tcp", "ping"] }).notNull(),
+  type: text("type", { enum: ["http", "tcp", "ping", "tls", "heartbeat"] }).notNull(),
+  /** heartbeat checks: secret in the push URL; lastPingAt = when the job last reported in */
+  token: text("token").unique(),
+  lastPingAt: integer("last_ping_at"),
   target: text("target").notNull(),
   intervalS: integer("interval_s").notNull().default(60),
   timeoutMs: integer("timeout_ms").notNull().default(5000),

@@ -4,7 +4,7 @@
 
 - **Alerts**: up to five destinations, each a webhook (Discord, Slack, Home Assistant, any JSON receiver) or ntfy, notified when a service goes down and when it recovers. Configure under Settings → Alerts; the URL is stored encrypted.
 - **Service details**: per-service uptime and latency charts (24h to 90d) from the dashboard.
-- **Checks**: choose GET or HEAD for HTTP checks.
+- **Checks**: choose GET or HEAD for HTTP checks. New **TLS certificate expiry** check (degraded within 14 days, down once expired; self-signed is fine) and **heartbeat** check for cron and backup jobs (`/api/heartbeat/<token>`, plus `/fail`); TCP checks now go through the same SSRF guard as HTTP.
 - **Alert routing**: limit each destination to selected groups, ungrouped services, or tags (a match on any selector routes the alert); a destination with none selected gets everything. Services now have editable tags (also via the `homi.tags` Docker label). Deleting a group removes it from routing.
 - **Quiet hours**: per-destination daily window (time zone aware, may cross midnight) during which alerts are held (except for services carrying a configured override tag such as `critical`, which always alert), with an optional single summary of services still down when it ends. Held alerts are dropped, not queued; a restart inside the window widens the summary to the last 12 hours.
 - **Alert muting**: mute down/recovery alerts per service (works for Docker-managed services too); monitoring continues and a bell-off icon marks the tile. Included in YAML backups.

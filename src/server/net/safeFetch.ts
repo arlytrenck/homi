@@ -22,14 +22,14 @@ export type SafeFetch = (url: string, init?: SafeFetchInit) => Promise<SafeRespo
 
 export class BlockedTargetError extends Error {}
 
-const defaultPolicy = (): IpPolicy => {
+export const defaultPolicy = (): IpPolicy => {
   let fromSettings = false;
   try { fromSettings = getSetting("allowLoopback", false); } catch { /* db unavailable (e.g. unit tests) */ }
   return { allowLoopback: fromSettings || process.env.HOMI_ALLOW_LOOPBACK === "1" };
 };
 
 /** DNS lookup that rejects blocked IPs at connect time (defeats DNS rebinding). */
-function guardedLookup(policy: IpPolicy): net.LookupFunction {
+export function guardedLookup(policy: IpPolicy): net.LookupFunction {
   return (hostname, opts, cb) => {
     dns.lookup(hostname, { ...opts, all: true }, (err, addrs) => {
       if (err) return (cb as any)(err);

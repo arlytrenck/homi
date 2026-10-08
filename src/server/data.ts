@@ -1,4 +1,5 @@
 import "server-only";
+import crypto from "node:crypto";
 import { eq, asc, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { groups, services, checks, widgets, integrations } from "@/server/db/schema";
@@ -18,9 +19,10 @@ export function upsertCheck(serviceId: string, name: string, c: NonNullable<Serv
   const db = getDb();
   const vals = { name, type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword ?? null, ignoreTls: c.ignoreTls, enabled: c.enabled };
   const ex = db.select().from(checks).where(eq(checks.serviceId, serviceId)).get();
+  const token = c.type === "heartbeat" && !ex?.token ? crypto.randomBytes(18).toString("base64url") : undefined;
   let id = ex?.id;
-  if (ex) db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
-  else { id = newId(); db.insert(checks).values({ id, serviceId, ...vals }).run(); }
+  if (ex) db.update(checks).set({ ...vals, ...(token && { token }) }).where(eq(checks.id, ex.id)).run();
+  else { id = newId(); db.insert(checks).values({ id, serviceId, ...vals, token: token ?? null }).run(); }
   getScheduler()?.reload(id); // pick up the new settings right away
 }
 
@@ -44,7 +46,7 @@ export function dashboardData(opts: { publicOnly: boolean }) {
       const c = byService.get(s.id);
       return {
         id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(opts.publicOnly ? {} : { alertsMuted: s.alertsMuted }), source: s.source, missing: s.missingSince != null,
-        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
+        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, token: c.token, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
       };
     }),
   };

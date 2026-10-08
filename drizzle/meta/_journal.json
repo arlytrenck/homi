@@ -22,6 +22,13 @@
       "when": 1791423094524,
       "tag": "0002_bitter_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791426827602,
+      "tag": "0003_soft_wallflower",
+      "breakpoints": true
     }
   ]
 }
