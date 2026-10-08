@@ -52,13 +52,17 @@ function Backup() {
   const [mode, setMode] = useState<"merge" | "replace">("merge");
   const [out, setOut] = useState("");
   const run = async (dryRun: boolean) => {
-    try { const r = await api<Record<string, unknown>>("/api/config/import", { method: "POST", body: { yaml, mode, dryRun } }); setOut(`${dryRun ? "Preview" : "Imported"}: ${r.groupsCreated} groups, ${r.servicesCreated} new services, ${r.servicesUpdated} updated.`); }
+    try { const r = await api<Record<string, unknown>>("/api/config/import", { method: "POST", body: { yaml, mode, dryRun } }); 
+      const n = (k: string) => Number(r[k] ?? 0);
+      const extra = [n("schedulesCreated") + n("schedulesUpdated") ? `${n("schedulesCreated") + n("schedulesUpdated")} maintenance schedules` : "", n("destinationsAdded") ? `${n("destinationsAdded")} alert destinations (switched off until you enter their URL)` : ""].filter(Boolean);
+      const skipped = (r.skipped as string[] | undefined) ?? [];
+      setOut(`${dryRun ? "Preview" : "Imported"}: ${r.groupsCreated} groups, ${r.servicesCreated} new services, ${r.servicesUpdated} updated${extra.length ? ", " + extra.join(", ") : ""}.${skipped.length ? " Skipped: " + skipped.join("; ") : ""}`); }
     catch (x) { setOut(msg(x)); }
   };
   return (
     <section className="card space-y-3 p-5" aria-labelledby="h-bk">
       <h2 id="h-bk" className="font-semibold">Backup &amp; restore (YAML)</h2>
-      <p className="text-sm text-muted">Exports groups, services and checks. Integration secrets are never exported.</p>
+      <p className="text-sm text-muted">Exports groups, services, checks, maintenance schedules and alert destinations. Secrets are never exported: integration secrets stay behind, and alert destinations come back switched off until you re-enter their URL.</p>
       <a className="btn" href="/api/config/export" download="homi.yaml">Download homi.yaml</a>
       <div><label className="label" htmlFor="yaml">Import YAML</label><textarea id="yaml" className="input min-h-32 py-2 font-mono text-xs" value={yaml} onChange={(e) => setYaml(e.target.value)} /></div>
       <div className="flex flex-wrap items-center gap-2">

@@ -14,7 +14,7 @@ Homi is an admin tool that runs on your LAN and optionally behind a reverse prox
 All server-side requests use `safeFetch`: http(s) only, no URL credentials, DNS results checked at connect time, redirects re-validated (max 3), 5 MB / 10 s caps. Always blocked: `0.0.0.0/8`, `169.254.0.0/16` (cloud metadata), IPv6 link-local, multicast. Loopback is blocked unless enabled. An ESLint rule forbids raw `fetch` in server code.
 
 ## Secrets at rest
-Secrets use AES-256-GCM with a key derived (HKDF) from `HOMI_SECRET_KEY`, bound to their record via AAD. If you lose the key, stored secrets cannot be recovered. YAML export never includes secrets.
+Secrets use AES-256-GCM with a key derived (HKDF) from `HOMI_SECRET_KEY`, bound to their record via AAD. If you lose the key, stored secrets cannot be recovered. YAML export never includes secrets, which includes the URLs of alert destinations.
 
 ## Docker socket
 Discovery and the Docker widget only issue read-only list requests, but a mounted socket is effectively root on the host even with `:ro`. Prefer a docker-socket-proxy limited to `CONTAINERS=1`. See [docker-labels.md](docker-labels.md).

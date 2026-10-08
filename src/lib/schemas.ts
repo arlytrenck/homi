@@ -52,7 +52,15 @@ export const SettingsInput = z.object({
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
 
-const destUrl = z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL");
+export const destUrl = z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL");
+export const QuietInput = z.object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
+      digest: z.boolean(),
+      overrideTags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+    });
 export const NotificationsInput = z.object({
   destinations: z.array(z.object({
     /** present = an existing destination (its URL is kept when `url` is omitted) */
@@ -63,14 +71,7 @@ export const NotificationsInput = z.object({
     onRecovery: z.boolean(),
     groupIds: z.array(z.string().max(40)).max(200).default([]),
     tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
-    quiet: z.object({
-      enabled: z.boolean(),
-      start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-      end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-      tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
-      digest: z.boolean(),
-      overrideTags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
-    }).optional(),
+    quiet: QuietInput.optional(),
   })).max(5),
 });
 export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });

@@ -47,7 +47,7 @@ See [integrations.md](integrations.md). Built-in widgets (weather, notes, bookma
 
 ## Backup and restore
 
-Settings → Backup exports services, groups, checks and mute flags as YAML. Import offers **merge** (match by name within a group) or **replace**, with a **dry run** that previews counts first. Exports never contain secrets, and Docker-managed services are excluded.
+Settings → Backup exports services, groups, checks, mute flags, weekly maintenance schedules and alert destinations (routing, quiet hours) as YAML. Destination URLs are secrets and are never exported: after a restore those destinations are switched off until you enter the URL again. Schedules and destinations that name a group or service are matched by name, and anything that cannot be matched is skipped and reported. Replace mode only replaces the sections the file contains. Import offers **merge** (match by name within a group) or **replace**, with a **dry run** that previews counts first. Exports never contain secrets, and Docker-managed services are excluded.
 
 To back up everything including integrations and secrets, copy the whole data directory (`./data`): the SQLite file **and** the encryption key. A database without its key cannot decrypt stored secrets.
 
