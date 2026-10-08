@@ -62,6 +62,10 @@ Requires Node 22+.
 
 Homi must reach private addresses, so its outbound guard (`src/server/net/safeFetch.ts`) allows RFC1918 ranges but always blocks link-local/cloud-metadata addresses, validates the *connected* IP (defeating DNS rebinding), re-validates every redirect, and blocks loopback unless you enable it. Details in [docs/security.md](docs/security.md).
 
+## Documentation
+
+[User guide](docs/user-guide.md) · [Deployment](docs/deployment.md) · [Architecture](docs/architecture.md) · [Integrations](docs/integrations.md) · [Docker labels](docs/docker-labels.md) · [Plugin API](docs/plugin-api.md) · [Security](docs/security.md) · [Roadmap](docs/roadmap.md)
+
 ## Brand
 
 Logo files, colors, typography and usage rules are in the [brand kit](docs/brand/BRAND.md) ([visual version](docs/brand/brandkit.html)).
