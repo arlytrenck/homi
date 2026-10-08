@@ -49,6 +49,7 @@ export const services = sqliteTable("services", {
   sourceRef: text("source_ref"),
   missingSince: integer("missing_since"),
   hiddenPublic: integer("hidden_public", { mode: "boolean" }).notNull().default(false),
+  alertsMuted: integer("alerts_muted", { mode: "boolean" }).notNull().default(false),
   createdAt: ts("created_at"),
   updatedAt: ts("updated_at"),
 });

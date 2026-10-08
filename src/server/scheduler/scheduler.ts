@@ -1,10 +1,11 @@
 import "server-only";
 import { eq, lt, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/server/db/client";
-import { checks, checkResults, checkRollups } from "@/server/db/schema";
+import { checks, checkResults, checkRollups, services } from "@/server/db/schema";
 import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
+import { classify, notifyTransition } from "@/server/notify/notify";
 
 type Check = typeof checks.$inferSelect;
 const HOUR = 3600_000;
@@ -37,11 +38,21 @@ export class Scheduler {
     this.flushTimer = setInterval(() => this.flush(), 2000);
   }
 
-  reload() { this.next.clear(); }
+  /** Config changed: forget deleted checks, and optionally re-run one immediately. Other schedules are kept. */
+  reload(runSoonId?: string) {
+    if (runSoonId) { this.next.set(runSoonId, 0); return; }
+    const ids = new Set(this.db.select({ id: checks.id }).from(checks).all().map((c) => c.id));
+    for (const id of this.next.keys()) if (!ids.has(id)) this.next.delete(id);
+  }
 
   private tick = () => {
     if (this.stopped) return;
     const now = Date.now();
+    try { this.dispatch(now); } catch (e) { console.error("[homi] scheduler tick failed", e); }
+    this.timer = setTimeout(this.tick, 1000);
+  };
+
+  private dispatch(now: number) {
     const all = this.db.select().from(checks).where(eq(checks.enabled, true)).all();
     for (const c of all) {
       if (!this.next.has(c.id)) {
@@ -52,8 +63,7 @@ export class Scheduler {
       if ((this.next.get(c.id) ?? 0) <= now && !this.running.has(c.id) && this.active < MAX_CONCURRENCY) void this.exec(c);
     }
     if (now - this.lastMaint > 10 * 60_000) { this.lastMaint = now; this.maintenance(now); }
-    this.timer = setTimeout(this.tick, 1000);
-  };
+  }
 
   private async exec(c: Check) {
     this.running.add(c.id); this.active++;
@@ -61,6 +71,8 @@ export class Scheduler {
     try {
       const o = await this.run({ type: c.type, target: c.target, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls });
       this.record(c.id, o);
+    } catch (e) {
+      console.error(`[homi] check ${c.id} failed`, e);
     } finally { this.running.delete(c.id); this.active--; }
   }
 
@@ -73,6 +85,9 @@ export class Scheduler {
       lastStatus: n.status, consecutiveFailures: n.failures, lastLatencyMs: o.latencyMs, lastCheckedAt: now,
       ...(changed ? { lastChangeAt: now } : {}),
     }).where(eq(checks.id, checkId)).run();
+    const kind = classify(c.lastStatus, n.status);
+    const muted = kind && c.serviceId ? this.db.select({ m: services.alertsMuted }).from(services).where(eq(services.id, c.serviceId)).get()?.m : false;
+    if (kind && !muted) void notifyTransition(this.db, { kind, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
   }

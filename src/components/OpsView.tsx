@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api-client";
-import type { DashboardDTO, Status } from "@/lib/types";
+import { useLiveDashboard } from "@/lib/live";
+import type { Status } from "@/lib/types";
 import { StatusDot } from "./StatusDot";
 
 const ORDER: Record<Status, number> = { down: 0, degraded: 1, unknown: 2, up: 3 };
@@ -28,15 +29,12 @@ function Bar({ checkId }: { checkId: string }) {
 }
 
 export function OpsView({ kiosk }: { kiosk: boolean }) {
-  const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard") });
+  const { data } = useLiveDashboard();
   useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.onmessage = () => qc.invalidateQueries({ queryKey: ["dashboard"] });
     let lock: { release(): Promise<void> } | undefined;
     if (kiosk) (navigator as any).wakeLock?.request("screen").then((l: typeof lock) => (lock = l)).catch(() => {});
-    return () => { es.close(); lock?.release(); };
-  }, [qc, kiosk]);
+    return () => { lock?.release(); };
+  }, [kiosk]);
   if (!data) return <div className="grid min-h-dvh place-items-center text-muted" role="status">Loading…</div>;
   const rows = data.services.filter((s) => s.status).sort((a, b) => ORDER[a.status!.status] - ORDER[b.status!.status] || a.name.localeCompare(b.name));
   const counts = rows.reduce((m, s) => ({ ...m, [s.status!.status]: (m[s.status!.status] ?? 0) + 1 }), {} as Record<string, number>);
@@ -48,12 +46,12 @@ export function OpsView({ kiosk }: { kiosk: boolean }) {
       </div>
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase text-muted"><tr><th className="p-2">Service</th><th className="p-2">Status</th><th className="p-2 text-right">Latency</th><th className="p-2 min-w-48">Last 24h</th><th className="p-2 max-md:hidden">Since</th></tr></thead>
+          <thead className="text-left text-xs font-medium text-muted"><tr><th className="p-2">Service</th><th className="p-2">Status</th><th className="p-2 text-right">Latency</th><th className="p-2 min-w-48">Last 24h</th><th className="p-2 max-md:hidden">Since</th></tr></thead>
           <tbody>
             {rows.map((s) => (
               <tr key={s.id} className="border-t border-border">
                 <td className="p-2 font-medium">{s.name}</td>
-                <td className="p-2"><span className="flex items-center gap-1.5"><StatusDot status={s.status!.status} /> {s.status!.status}</span></td>
+                <td className="p-2"><span className="flex items-center gap-1.5 capitalize"><StatusDot status={s.status!.status} /> {s.status!.status}</span></td>
                 <td className="p-2 text-right tabular-nums">{s.status!.latencyMs != null ? `${s.status!.latencyMs} ms` : "–"}</td>
                 <td className="p-2"><Bar checkId={s.status!.id} /></td>
                 <td className="p-2 text-xs text-muted max-md:hidden">{s.status!.changedAt ? new Date(s.status!.changedAt).toLocaleString() : "–"}</td>

@@ -2,7 +2,7 @@ import { test, expect, type Browser } from "@playwright/test";
 import { addService, enterEditMode, openDashboard } from "./helpers";
 
 async function anonymous(browser: Browser) {
-  return browser.newContext({ baseURL: "http://127.0.0.1:3100", storageState: { cookies: [], origins: [] } });
+  return browser.newContext({ baseURL: `http://127.0.0.1:${process.env.E2E_PORT ?? 3100}`, storageState: { cookies: [], origins: [] } });
 }
 
 test("public view exposes only what you allow, read-only", async ({ page, browser }) => {

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 
-const PORT = 3100;
+const PORT = Number(process.env.E2E_PORT ?? 3100);
 const dataDir = path.resolve(".e2e-data");
 const dockerSock = "/tmp/homi-e2e-docker.sock";
 

@@ -5,6 +5,7 @@ export const CheckInput = z.object({
   target: z.string().trim().min(1).max(500),
   intervalS: z.number().int().min(10).max(86400).default(60),
   timeoutMs: z.number().int().min(500).max(30000).default(5000),
+  httpMethod: z.enum(["GET", "HEAD"]).default("GET"),
   expectedStatus: z.string().regex(/^\d{3}(-\d{3})?$/).default("200-399"),
   keyword: z.string().max(200).nullish(),
   ignoreTls: z.boolean().default(false),
@@ -23,10 +24,11 @@ const serviceShape = {
   targetBlank: z.boolean(),
   tags: z.array(z.string().max(32)).max(16),
   hiddenPublic: z.boolean(),
+  alertsMuted: z.boolean(),
   check: CheckInput.nullish(),
 };
 // Defaults live only on the create schema; patch schemas must not inject them.
-export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false) });
+export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false), alertsMuted: serviceShape.alertsMuted.default(false) });
 export const ServicePatch = z.object(serviceShape).partial();
 export type ServiceInput = z.infer<typeof ServiceInput>;
 
@@ -45,6 +47,19 @@ export const SettingsInput = z.object({
   retentionHours: z.number().int().min(1).max(24 * 30).optional(),
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
+
+const destUrl = z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL");
+export const NotificationsInput = z.object({
+  destinations: z.array(z.object({
+    /** present = an existing destination (its URL is kept when `url` is omitted) */
+    id: z.string().max(40).optional(),
+    kind: z.enum(["webhook", "ntfy"]),
+    url: destUrl.optional(),
+    enabled: z.boolean(),
+    onRecovery: z.boolean(),
+  })).max(5),
+});
+export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });
 
 const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
 

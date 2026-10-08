@@ -19,12 +19,15 @@ function groupId(db: Db, name: string | null): string | null {
   return id;
 }
 
-function writeCheck(db: Db, serviceId: string, name: string, d: Discovered["check"], enabled = true) {
+/** Returns true if anything was written. */
+function writeCheck(db: Db, serviceId: string, name: string, d: Discovered["check"], enabled = true): boolean {
   const ex = db.select().from(checks).where(eq(checks.serviceId, serviceId)).get();
-  if (!d) { if (ex) db.delete(checks).where(eq(checks.id, ex.id)).run(); return; }
+  if (!d) { if (ex) { db.delete(checks).where(eq(checks.id, ex.id)).run(); return true; } return false; }
   const vals = { name, type: d.type, target: d.target, enabled };
-  if (ex) db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
-  else db.insert(checks).values({ id: newId(), serviceId, ...vals }).run();
+  if (!ex) { db.insert(checks).values({ id: newId(), serviceId, ...vals }).run(); return true; }
+  if (ex.name === name && ex.type === d.type && ex.target === d.target && ex.enabled === enabled) return false;
+  db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
+  return true;
 }
 
 /**
@@ -58,9 +61,10 @@ export function syncDiscovered(containers: DockerContainer[], opts: { host?: str
         res.created++;
       } else {
         const wasMissing = ex.missingSince != null;
-        tx.update(services).set({ name: d.name, description: d.description, url: d.url, icon: d.icon, hiddenPublic: d.hiddenPublic, missingSince: null, updatedAt: now, ...(wasMissing && !ex.groupId ? { groupId: groupId(tx as unknown as Db, d.group) } : {}) }).where(eq(services.id, ex.id)).run();
-        writeCheck(tx as unknown as Db, ex.id, d.name, d.check);
-        res.updated++;
+        const same = !wasMissing && ex.name === d.name && ex.description === d.description && ex.url === d.url && ex.icon === d.icon && ex.hiddenPublic === d.hiddenPublic;
+        if (!same) tx.update(services).set({ name: d.name, description: d.description, url: d.url, icon: d.icon, hiddenPublic: d.hiddenPublic, missingSince: null, updatedAt: now, ...(wasMissing && !ex.groupId ? { groupId: groupId(tx as unknown as Db, d.group) } : {}) }).where(eq(services.id, ex.id)).run();
+        const checkChanged = writeCheck(tx as unknown as Db, ex.id, d.name, d.check);
+        if (!same || checkChanged) res.updated++;
       }
     }
 

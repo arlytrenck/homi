@@ -52,6 +52,7 @@ export const safeFetch: SafeFetch = async (rawUrl, init = {}) => {
   let url = new URL(rawUrl);
   let method = init.method ?? "GET";
   let body = init.body;
+  let reqHeaders = init.headers;
 
   for (let hop = 0; ; hop++) {
     if (url.protocol !== "http:" && url.protocol !== "https:") throw new BlockedTargetError("Only http(s) URLs are allowed");
@@ -67,13 +68,17 @@ export const safeFetch: SafeFetch = async (rawUrl, init = {}) => {
     });
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), init.timeoutMs ?? 10_000);
-    init.signal?.addEventListener("abort", () => ctl.abort(), { once: true });
+    const onAbort = () => ctl.abort();
+    init.signal?.addEventListener("abort", onAbort, { once: true });
     try {
-      const res = await request(url, { method: method as any, headers: init.headers, body, dispatcher: agent, signal: ctl.signal });
+      const res = await request(url, { method: method as any, headers: reqHeaders, body, dispatcher: agent, signal: ctl.signal });
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
         await res.body.dump();
         if (hop >= maxRedirects) throw new BlockedTargetError("Too many redirects");
+        const prev = url;
         url = new URL(String(res.headers.location), url);
+        // Never forward API keys / cookies to a different origin.
+        if (url.origin !== prev.origin) reqHeaders = undefined;
         if (res.statusCode === 303 || ((res.statusCode === 301 || res.statusCode === 302) && method === "POST")) { method = "GET"; body = undefined; }
         continue;
       }
@@ -90,6 +95,7 @@ export const safeFetch: SafeFetch = async (rawUrl, init = {}) => {
       return { status: res.statusCode, headers, text, json: <T>() => JSON.parse(text) as T, ms: Date.now() - started };
     } finally {
       clearTimeout(timer);
+      init.signal?.removeEventListener("abort", onAbort);
       await agent.close().catch(() => {});
     }
   }

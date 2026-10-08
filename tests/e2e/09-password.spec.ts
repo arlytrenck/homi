@@ -6,7 +6,7 @@ const NEW = "e2e-new-password-2";
 test("changing the password signs out other sessions and the old password stops working", async ({ page, browser, request }) => {
   test.setTimeout(90_000); // several argon2 hashes and sign-ins
   // A second session that should be revoked.
-  const other = await browser.newContext({ baseURL: "http://127.0.0.1:3100", storageState: { cookies: [], origins: [] } });
+  const other = await browser.newContext({ baseURL: `http://127.0.0.1:${process.env.E2E_PORT ?? 3100}`, storageState: { cookies: [], origins: [] } });
   const op = await other.newPage();
   await op.goto("/login");
   await op.getByLabel("Username").fill(ADMIN.username);
@@ -29,7 +29,7 @@ test("changing the password signs out other sessions and the old password stops 
   expect((await other.request.get("/api/settings")).status()).toBe(401);
   await other.close();
 
-  const fresh = await browser.newContext({ baseURL: "http://127.0.0.1:3100", storageState: { cookies: [], origins: [] } });
+  const fresh = await browser.newContext({ baseURL: `http://127.0.0.1:${process.env.E2E_PORT ?? 3100}`, storageState: { cookies: [], origins: [] } });
   const fp = await fresh.newPage();
   await fp.goto("/login");
   await fp.getByLabel("Username").fill(ADMIN.username);

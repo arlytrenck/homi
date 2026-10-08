@@ -8,6 +8,7 @@ export function checkLimit(key: string, now = Date.now()): number {
   return b && b.lockedUntil > now ? b.lockedUntil - now : 0;
 }
 export function recordFailure(key: string, now = Date.now()) {
+  if (buckets.size > 1000) for (const [k, v] of buckets) if (v.lockedUntil < now && now - v.windowStart > WINDOW) buckets.delete(k);
   let b = buckets.get(key);
   if (!b || now - b.windowStart > WINDOW) b = { fails: 0, lockedUntil: 0, windowStart: now };
   b.fails++;
