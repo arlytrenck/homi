@@ -46,6 +46,7 @@ export const SettingsInput = z.object({
   title: z.string().max(60).optional(),
   theme: z.enum(["system", "light", "dark"]).optional(),
   publicView: z.boolean().optional(),
+  statusPage: z.boolean().optional(),
   allowLoopback: z.boolean().optional(),
   retentionHours: z.number().int().min(1).max(24 * 30).optional(),
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),

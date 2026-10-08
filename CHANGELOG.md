@@ -10,6 +10,8 @@
 - **Maintenance windows**: hold alerts for everything, a group or one service for a set time (Settings → Maintenance, or the service detail dialog). Checks keep running; tiles show a Maintenance badge; one "still down" alert is sent when a window ends. Recurring windows are not supported yet.
 - **Dependencies**: a service can depend on another; when the upstream is down its dependents show "Affected by …" and stay quiet (one alert for the root cause, plus a follow-up if a dependent is still down after the upstream recovers). Not included in YAML backups yet.
 - **Incident log**: every outage is recorded (start, duration, cause or upstream) under Ops → Incidents and in each service's detail dialog, kept for 90 days.
+- **Command palette**: Cmd/Ctrl+K to jump to a service or page, toggle the theme, or sign out.
+- **Public status page** at `/status` (Settings → General): no sign-in, 90-day uptime bars, recent incidents without error details; services marked hidden never appear.
 - **Alert muting**: mute down/recovery alerts per service (works for Docker-managed services too); monitoring continues and a bell-off icon marks the tile. Included in YAML backups.
 - **Fixes**: deleting a service no longer risks a crash when its buffered check results are written; discovery no longer resets check schedules every 30 seconds; SSRF guard now blocks IPv4-mapped IPv6 forms; credentials are not forwarded on cross-origin redirects; the ops view no longer refetches on every status event.
 

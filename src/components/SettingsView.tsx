@@ -9,7 +9,7 @@ import { DiscoveryPanel } from "./DiscoveryPanel";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { MaintenancePanel } from "./MaintenancePanel";
 
-interface S { title: string; theme: string; publicView: boolean; allowLoopback: boolean; retentionHours: number }
+interface S { title: string; theme: string; publicView: boolean; statusPage: boolean; allowLoopback: boolean; retentionHours: number }
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
 
 function General() {
@@ -27,6 +27,7 @@ function General() {
         <div><button className="btn btn-primary">Save</button> <span className="ml-2 text-sm text-muted" role="status">{note}</span></div>
       </form>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={data.publicView} onChange={(e) => save({ publicView: e.target.checked })} /><span><b>Public read-only view.</b> Anyone who can reach Homi sees services not marked hidden. Status only; no error details or widget data.</span></label>
+      <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={data.statusPage} onChange={(e) => save({ statusPage: e.target.checked })} /><span><b>Public status page at <code>/status</code>.</b> Shareable with anyone, no sign-in, even when the public view is off. Shows status, 90-day uptime and recent incidents (no error details) for services not marked hidden.</span></label>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={data.allowLoopback} onChange={(e) => save({ allowLoopback: e.target.checked })} /><span><b>Allow checks against loopback (127.0.0.0/8).</b> Needed to monitor services on Homi’s own host from inside Docker host-networking. Link-local/metadata addresses are always blocked.</span></label>
     </section>
   );

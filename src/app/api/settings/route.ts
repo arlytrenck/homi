@@ -5,7 +5,7 @@ import { SettingsInput } from "@/lib/schemas";
 import { changed } from "@/server/data";
 export const dynamic = "force-dynamic";
 const read = () => ({
-  title: getSetting("title", "Homi"), theme: getSetting("theme", "system"), publicView: getSetting("publicView", false),
+  title: getSetting("title", "Homi"), theme: getSetting("theme", "system"), publicView: getSetting("publicView", false), statusPage: getSetting("statusPage", false),
   allowLoopback: getSetting("allowLoopback", false), retentionHours: getSetting("retentionHours", 48), weather: getSetting("weather", null),
 });
 export const GET = route({ auth: "admin" }, read);

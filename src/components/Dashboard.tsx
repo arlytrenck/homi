@@ -8,6 +8,7 @@ import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoor
 import { CSS } from "@dnd-kit/utilities";
 import { Activity, BellOff, ChartLine, Wrench, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { isDark, toggleTheme } from "@/lib/theme";
 import { useLiveDashboard } from "@/lib/live";
 import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
@@ -112,7 +113,7 @@ export function Dashboard() {
   const [dark, setDark] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
-  useEffect(() => { setDark(document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches)); }, []);
+  useEffect(() => { setDark(isDark()); const h = () => setDark(isDark()); addEventListener("homi-theme", h); return () => removeEventListener("homi-theme", h); }, []);
   useEffect(() => { if (data?.settings.title) document.title = data.settings.title; }, [data?.settings.title]);
 
   // "/" focuses search
@@ -144,12 +145,6 @@ export function Dashboard() {
   const by = (gid: string | null) => filtered.filter((s) => (s.groupId ?? null) === gid);
   const refresh = () => qc.invalidateQueries({ queryKey: ["dashboard"] });
   const isEdit = edit && viewer === "admin";
-
-  async function toggleTheme() {
-    const next = dark ? "light" : "dark";
-    document.documentElement.dataset.theme = next; document.cookie = `homi_theme=${next}; path=/; max-age=31536000; samesite=lax`; setDark(!dark);
-    if (viewer === "admin") api("/api/settings", { method: "PATCH", body: { theme: next } }).catch(() => {});
-  }
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -197,10 +192,10 @@ export function Dashboard() {
         <Clock />
         <div className="relative w-full sm:w-64 sm:order-none order-last">
           <Search size={16} className="pointer-events-none absolute left-3 top-3 text-muted" aria-hidden />
-          <input id="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && filtered[0]) window.open(filtered[0].url, filtered[0].targetBlank ? "_blank" : "_self", "noopener"); if (e.key === "Escape") { setQ(""); (e.target as HTMLElement).blur(); } }} className="input !pl-9" placeholder="Search…  ( / )" aria-label="Search services" />
+          <input id="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && filtered[0]) window.open(filtered[0].url, filtered[0].targetBlank ? "_blank" : "_self", "noopener"); if (e.key === "Escape") { setQ(""); (e.target as HTMLElement).blur(); } }} className="input !pl-9" placeholder="Search…  ( / )  ·  ⌘K" aria-label="Search services" />
         </div>
         <Link href="/ops" className="btn" aria-label="Ops view"><Activity size={16} /><span className="max-sm:hidden">Ops</span></Link>
-        <button className="btn" onClick={toggleTheme} aria-label="Toggle theme">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
+        <button className="btn" onClick={() => toggleTheme(viewer === "admin")} aria-label="Toggle theme">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
         {viewer === "admin" ? (
           <>
             <button className={`btn ${edit ? "btn-primary" : ""}`} onClick={() => setEdit(!edit)} aria-pressed={edit}>{edit ? <><Check size={16} /> Done</> : <><Pencil size={16} /><span className="max-sm:hidden">Edit</span></>}</button>
