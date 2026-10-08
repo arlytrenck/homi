@@ -65,6 +65,12 @@ describe("syncDiscovered", () => {
     expect(db.select().from(checks).all()).toHaveLength(1);
     expect(db.select().from(groups).all()).toHaveLength(1);
   });
+  it("syncs homi.tags and reports a change when they change", () => {
+    syncDiscovered([plex({ "homi.tags": "media, Critical,media" })], {}, db, t0);
+    expect(db.select().from(services).get()!.tags).toEqual(["media", "Critical"]);
+    expect(syncDiscovered([plex({ "homi.tags": "media, Critical" })], {}, db, t0 + 1)).toMatchObject({ updated: 0 });
+    expect(syncDiscovered([plex({ "homi.tags": "media" })], {}, db, t0 + 2)).toMatchObject({ updated: 1 });
+  });
   it("reports no update when labels are unchanged", () => {
     syncDiscovered([plex()], {}, db, t0);
     expect(syncDiscovered([plex()], {}, db, t0 + 1)).toMatchObject({ created: 0, updated: 0 });

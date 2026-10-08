@@ -92,6 +92,14 @@ describe("group routing", () => {
     expect(routesTo({ groupIds: ["g1"] }, null)).toBe(false);
     expect(routesTo({ groupIds: ["__none__"] }, undefined)).toBe(true);
   });
+  it("routes by tag (case-insensitive) or group, whichever matches", () => {
+    const d = { groupIds: ["g1"], tags: ["Critical"] };
+    expect(routesTo(d, "g2", ["critical"])).toBe(true);
+    expect(routesTo(d, "g1", [])).toBe(true);
+    expect(routesTo(d, "g2", ["media"])).toBe(false);
+    expect(routesTo({ tags: ["x"] }, null, ["x"])).toBe(true);
+    expect(routesTo({ tags: ["x"] }, "g1")).toBe(false);
+  });
   it("deleting a group removes it from destinations", () => {
     process.env.HOMI_MIGRATIONS = path.resolve("drizzle");
     const db = openDb(":memory:").db; runMigrations(db);

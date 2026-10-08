@@ -15,6 +15,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
     const url = String(f.get("url"));
     return {
       name: String(f.get("name")), url, description: String(f.get("description") || "") || null, icon: String(f.get("icon") || "") || null,
+      tags: String(f.get("tags") || "").split(",").map((t) => t.trim()).filter(Boolean),
       groupId: String(f.get("groupId") || "") || null, hiddenPublic: f.get("hiddenPublic") === "on", alertsMuted: f.get("alertsMuted") === "on",
       check: monitor ? { type: String(f.get("ctype")) as "http", target: String(f.get("target") || url), intervalS: Number(f.get("intervalS")) || 60, timeoutMs: 5000, httpMethod: String(f.get("httpMethod") || "GET") as "GET", expectedStatus: String(f.get("expectedStatus") || "200-399"), keyword: String(f.get("keyword") || "") || null, ignoreTls: f.get("ignoreTls") === "on", enabled: true } : null,
     };
@@ -52,6 +53,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
           <div><label className="label" htmlFor="s-desc">Description</label><input id="s-desc" name="description" className="input" defaultValue={service?.description ?? ""} readOnly={service?.source === "docker"} /></div>
           <div><label className="label" htmlFor="s-icon">Icon (image URL or emoji)</label><input id="s-icon" name="icon" className="input" defaultValue={service?.icon ?? ""} readOnly={service?.source === "docker"} /></div>
         </div>
+        <div><label className="label" htmlFor="s-tags">Tags (comma-separated)</label><input id="s-tags" name="tags" className="input" placeholder="e.g. critical, media" defaultValue={service?.tags.join(", ") ?? ""} readOnly={service?.source === "docker"} /></div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={monitor} disabled={service?.source === "docker"} onChange={(e) => setMonitor(e.target.checked)} /> Monitor this service</label>
         {monitor && (
           <fieldset disabled={service?.source === "docker"} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-2">

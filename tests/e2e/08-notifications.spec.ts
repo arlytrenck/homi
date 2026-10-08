@@ -60,9 +60,9 @@ test("a destination can be limited to selected groups", async ({ page }) => {
   const panel = page.locator("section", { has: page.getByRole("heading", { name: "Alerts" }) });
   const row = panel.locator("fieldset").first();
   await row.getByLabel("Alert for").selectOption("groups");
-  await expect(row.getByText("No group selected")).toBeVisible();
+  await expect(row.getByText("No group or tag selected")).toBeVisible();
   await row.getByRole("group").getByLabel("Infrastructure").check();
-  await expect(row.getByText("No group selected")).toBeHidden();
+  await expect(row.getByText("No group or tag selected")).toBeHidden();
   await panel.getByRole("button", { name: "Save", exact: true }).click();
   await expect(panel.getByRole("status").last()).toHaveText("Saved");
   await page.reload();
@@ -70,6 +70,28 @@ test("a destination can be limited to selected groups", async ({ page }) => {
   await expect(again.getByLabel("Alert for")).toHaveValue("groups");
   await expect(again.getByRole("group").getByLabel("Infrastructure")).toBeChecked();
   await again.getByLabel("Alert for").selectOption("all");
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+});
+
+test("tags can be set on a service and used to route alerts", async ({ page }) => {
+  await openDashboard(page);
+  await enterEditMode(page);
+  await page.getByRole("button", { name: "Edit Homi itself" }).click();
+  await page.getByRole("dialog").getByLabel("Tags").fill("critical, edge");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await page.goto("/settings");
+  const panel = page.locator("section", { has: page.getByRole("heading", { name: "Alerts" }) });
+  const row = panel.locator("fieldset").first();
+  await row.getByLabel("Alert for").selectOption("groups");
+  await row.getByLabel("Tags (comma-separated)").fill("critical");
+  await expect(row.getByText("No group or tag selected")).toBeHidden();
+  await panel.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(panel.getByRole("status").last()).toHaveText("Saved");
+  await page.reload();
+  await expect(panel.locator("fieldset").first().getByLabel("Tags (comma-separated)")).toHaveValue("critical");
+  await panel.locator("fieldset").first().getByLabel("Alert for").selectOption("all");
   await panel.getByRole("button", { name: "Save", exact: true }).click();
   await expect(panel.getByRole("status").last()).toHaveText("Saved");
 });

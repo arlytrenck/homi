@@ -58,6 +58,7 @@ export const NotificationsInput = z.object({
     enabled: z.boolean(),
     onRecovery: z.boolean(),
     groupIds: z.array(z.string().max(40)).max(200).default([]),
+    tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
   })).max(5),
 });
 export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });
