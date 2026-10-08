@@ -5,6 +5,7 @@ export const CheckInput = z.object({
   target: z.string().trim().min(1).max(500),
   intervalS: z.number().int().min(10).max(86400).default(60),
   timeoutMs: z.number().int().min(500).max(30000).default(5000),
+  httpMethod: z.enum(["GET", "HEAD"]).default("GET"),
   expectedStatus: z.string().regex(/^\d{3}(-\d{3})?$/).default("200-399"),
   keyword: z.string().max(200).nullish(),
   ignoreTls: z.boolean().default(false),

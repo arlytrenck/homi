@@ -11,12 +11,12 @@ import type { ServiceInput } from "@/lib/schemas";
 export const changed = () => { getScheduler()?.reload(); publish({ type: "config-changed" }); };
 
 export function defaultCheck(url: string): NonNullable<ServiceInput["check"]> {
-  return { type: "http", target: url, intervalS: 60, timeoutMs: 5000, expectedStatus: "200-399", ignoreTls: false, enabled: true };
+  return { type: "http", httpMethod: "GET", target: url, intervalS: 60, timeoutMs: 5000, expectedStatus: "200-399", ignoreTls: false, enabled: true };
 }
 
 export function upsertCheck(serviceId: string, name: string, c: NonNullable<ServiceInput["check"]>) {
   const db = getDb();
-  const vals = { name, type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, expectedStatus: c.expectedStatus, keyword: c.keyword ?? null, ignoreTls: c.ignoreTls, enabled: c.enabled };
+  const vals = { name, type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword ?? null, ignoreTls: c.ignoreTls, enabled: c.enabled };
   const ex = db.select().from(checks).where(eq(checks.serviceId, serviceId)).get();
   let id = ex?.id;
   if (ex) db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
@@ -44,7 +44,7 @@ export function dashboardData(opts: { publicOnly: boolean }) {
       const c = byService.get(s.id);
       return {
         id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, source: s.source, missing: s.missingSince != null,
-        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
+        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
       };
     }),
   };

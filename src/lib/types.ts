@@ -1,7 +1,7 @@
 export type Status = "up" | "down" | "degraded" | "unknown";
 export interface CheckInfo {
   id: string; status: Status; latencyMs: number | null; checkedAt: number | null; changedAt: number | null; enabled: boolean;
-  type?: "http" | "tcp" | "ping"; target?: string; intervalS?: number; timeoutMs?: number; expectedStatus?: string; keyword?: string | null; ignoreTls?: boolean;
+  type?: "http" | "tcp" | "ping"; target?: string; intervalS?: number; timeoutMs?: number; httpMethod?: "GET" | "HEAD"; expectedStatus?: string; keyword?: string | null; ignoreTls?: boolean;
 }
 export interface ServiceDTO {
   id: string; groupId: string | null; name: string; description: string | null; url: string; icon: string | null;

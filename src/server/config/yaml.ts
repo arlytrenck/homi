@@ -17,7 +17,7 @@ const YDoc = z.object({
 export type YamlDoc = z.infer<typeof YDoc>;
 
 const checkOut = (c: typeof checks.$inferSelect | undefined) =>
-  c ? { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, expectedStatus: c.expectedStatus, keyword: c.keyword ?? undefined, ignoreTls: c.ignoreTls, enabled: c.enabled } : undefined;
+  c ? { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, ...(c.httpMethod !== "GET" && { httpMethod: c.httpMethod as "HEAD" }), expectedStatus: c.expectedStatus, keyword: c.keyword ?? undefined, ignoreTls: c.ignoreTls, enabled: c.enabled } : undefined;
 
 export function exportYaml(): string {
   const db = getDb();

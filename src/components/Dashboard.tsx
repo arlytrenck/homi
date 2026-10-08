@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, ChartLine, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useLiveDashboard } from "@/lib/live";
 import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
@@ -19,6 +19,7 @@ import { Clock } from "./Clock";
 import { BrandMark } from "./BrandMark";
 import { WidgetCard } from "./WidgetCard";
 import { WidgetDialog } from "./WidgetDialog";
+import { ServiceDetail } from "./ServiceDetail";
 
 const UNGROUPED = "__none__";
 
@@ -28,7 +29,7 @@ const collision: CollisionDetection = (args) => {
   return hits.length ? hits : rectIntersection(args);
 };
 
-function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onEdit: () => void; onDelete: () => void }) {
+function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: boolean; onEdit: () => void; onDelete: () => void; onDetail: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: s.id, disabled: !edit });
   const st = s.status;
   const tip = st ? `${st.status}${st.latencyMs != null ? ` · ${st.latencyMs} ms` : ""}` : "Not monitored";
@@ -56,14 +57,17 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
           {s.source === "manual" && <button onClick={onDelete} className="btn btn-danger !min-h-8 !px-2" aria-label={`Delete ${s.name}`}><Trash2 size={14} /></button>}
         </div>
       ) : (
-        <a href={s.url} target={s.targetBlank ? "_blank" : undefined} rel="noopener noreferrer" className={cls} style={{ padding: "var(--tile-pad)" }} title={tip}>{body}</a>
+        <>
+          <a href={s.url} target={s.targetBlank ? "_blank" : undefined} rel="noopener noreferrer" className={`${cls} ${st ? "!pr-11" : ""}`} style={{ padding: "var(--tile-pad)" }} title={tip}>{body}</a>
+          {st && <button onClick={onDetail} className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg" aria-label={`${s.name} uptime details`}><ChartLine size={15} /></button>}
+        </>
       )}
     </li>
   );
 }
 
-function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelete, onRename, onRemove }: {
-  group: GroupDTO | null; services: ServiceDTO[]; edit: boolean; folded?: boolean; onFold?: () => void; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
+function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelete, onDetail, onRename, onRemove }: {
+  group: GroupDTO | null; services: ServiceDTO[]; edit: boolean; folded?: boolean; onFold?: () => void; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onDetail: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
 }) {
   const id = group?.id ?? UNGROUPED;
   const { setNodeRef } = useDroppable({ id });
@@ -82,7 +86,7 @@ function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelet
       </div>
       {(!folded || edit) && <SortableContext items={services.map((s) => s.id)} strategy={rectSortingStrategy}>
         <ul ref={setNodeRef} className={`grid p-0 ${edit && !services.length ? "min-h-14 items-center justify-items-center rounded-[10px] border border-dashed border-border text-sm text-muted" : "min-h-6"}`} style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,16rem),1fr))", gap: "var(--tile-gap)" }}>
-          {services.map((s) => <Tile key={s.id} s={s} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} />)}
+          {services.map((s) => <Tile key={s.id} s={s} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} onDetail={() => onDetail(s)} />)}
           {edit && !services.length && <li className="list-none" aria-hidden>Drop services here</li>}
         </ul>
       </SortableContext>}
@@ -96,6 +100,7 @@ export function Dashboard() {
   const router = useRouter();
   const qc = useQueryClient();
   const { data, isError, refetch } = useLiveDashboard();
+  const [detail, setDetail] = useState<string | null>(null);
   const [onlyBad, setOnlyBad] = useState(false);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [edit, setEdit] = useState(false);
@@ -205,12 +210,12 @@ export function Dashboard() {
       <DndContext sensors={sensors} collisionDetection={collision} onDragEnd={onDragEnd}>
         {groups.map((g) => (
           <Section key={g.id} group={g} services={by(g.id)} edit={isEdit} folded={!needle && !onlyBad && (folded[g.id] ?? g.collapsed)} onFold={() => toggleFold(g)}
-            onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })}
+            onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })} onDetail={(s) => setDetail(s.id)}
             onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }}
             onRename={async () => { const name = await dlg.prompt("Rename group", g.name); if (name?.trim()) { await api(`/api/groups/${g.id}`, { method: "PATCH", body: { name: name.trim() } }); refresh(); } }}
             onRemove={async () => { if (await dlg.confirm(`Delete group "${g.name}"? Its services become ungrouped.`)) { await api(`/api/groups/${g.id}`, { method: "DELETE" }); refresh(); } }} />
         ))}
-        <Section group={null} services={by(null)} edit={isEdit} onAdd={() => setDialog({ service: null })} onEdit={(s) => setDialog({ service: s })}
+        <Section group={null} services={by(null)} edit={isEdit} onAdd={() => setDialog({ service: null })} onEdit={(s) => setDialog({ service: s })} onDetail={(s) => setDetail(s.id)}
           onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }} />
       </DndContext>
 
@@ -222,6 +227,7 @@ export function Dashboard() {
         </div>
       )}
       {needle && !filtered.length && <p className="text-center text-muted">No matches for “{q}”.</p>}
+      {detail && data.services.find((s) => s.id === detail)?.status && <ServiceDetail service={data.services.find((s) => s.id === detail)!} onClose={() => setDetail(null)} />}
       {wdialog && <WidgetDialog widget={wdialog.widget} onClose={() => setWdialog(null)} onSaved={() => { setWdialog(null); qc.invalidateQueries({ queryKey: ["widget"] }); refresh(); }} />}
       {dialog && <ServiceDialog service={dialog.service} groups={groups} defaultGroupId={dialog.groupId} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); refresh(); }} />}
     </main>

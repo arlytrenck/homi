@@ -16,7 +16,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
     return {
       name: String(f.get("name")), url, description: String(f.get("description") || "") || null, icon: String(f.get("icon") || "") || null,
       groupId: String(f.get("groupId") || "") || null, hiddenPublic: f.get("hiddenPublic") === "on",
-      check: monitor ? { type: String(f.get("ctype")) as "http", target: String(f.get("target") || url), intervalS: Number(f.get("intervalS")) || 60, timeoutMs: 5000, expectedStatus: String(f.get("expectedStatus") || "200-399"), keyword: String(f.get("keyword") || "") || null, ignoreTls: f.get("ignoreTls") === "on", enabled: true } : null,
+      check: monitor ? { type: String(f.get("ctype")) as "http", target: String(f.get("target") || url), intervalS: Number(f.get("intervalS")) || 60, timeoutMs: 5000, httpMethod: String(f.get("httpMethod") || "GET") as "GET", expectedStatus: String(f.get("expectedStatus") || "200-399"), keyword: String(f.get("keyword") || "") || null, ignoreTls: f.get("ignoreTls") === "on", enabled: true } : null,
     };
   }
 
@@ -58,6 +58,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
             <div><label className="label" htmlFor="c-type">Check type</label><select id="c-type" name="ctype" className="input" defaultValue={c?.type ?? "http"}><option value="http">HTTP</option><option value="tcp">TCP port</option><option value="ping">Ping</option></select></div>
             <div><label className="label" htmlFor="c-int">Interval (seconds)</label><input id="c-int" name="intervalS" type="number" min={10} className="input" defaultValue={c?.intervalS ?? 60} /></div>
             <div className="sm:col-span-2"><label className="label" htmlFor="c-target">Target (defaults to URL; host:port for TCP; host for ping)</label><input id="c-target" name="target" className="input" defaultValue={c?.target && c.target !== service?.url ? c.target : ""} /></div>
+            <div><label className="label" htmlFor="c-method">HTTP method</label><select id="c-method" name="httpMethod" className="input" defaultValue={c?.httpMethod ?? "GET"}><option value="GET">GET</option><option value="HEAD">HEAD (lighter)</option></select></div>
             <div><label className="label" htmlFor="c-exp">Expected status</label><input id="c-exp" name="expectedStatus" className="input" defaultValue={c?.expectedStatus ?? "200-399"} /></div>
             <div><label className="label" htmlFor="c-kw">Keyword (optional)</label><input id="c-kw" name="keyword" className="input" defaultValue={c?.keyword ?? ""} /></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="ignoreTls" defaultChecked={c?.ignoreTls} /> Ignore TLS errors</label>
