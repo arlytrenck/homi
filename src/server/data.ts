@@ -18,8 +18,10 @@ export function upsertCheck(serviceId: string, name: string, c: NonNullable<Serv
   const db = getDb();
   const vals = { name, type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, expectedStatus: c.expectedStatus, keyword: c.keyword ?? null, ignoreTls: c.ignoreTls, enabled: c.enabled };
   const ex = db.select().from(checks).where(eq(checks.serviceId, serviceId)).get();
+  let id = ex?.id;
   if (ex) db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
-  else db.insert(checks).values({ id: newId(), serviceId, ...vals }).run();
+  else { id = newId(); db.insert(checks).values({ id, serviceId, ...vals }).run(); }
+  getScheduler()?.reload(id); // pick up the new settings right away
 }
 
 export function nextSort(table: typeof groups | typeof services | typeof widgets): number {

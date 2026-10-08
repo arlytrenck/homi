@@ -2,13 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
-import type { DashboardDTO, GroupDTO, ServiceDTO, Status, WidgetDTO } from "@/lib/types";
+import { useLiveDashboard } from "@/lib/live";
+import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
 import { useDialogs } from "./Dialogs";
 import { StatusDot } from "./StatusDot";
@@ -39,10 +40,12 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
         {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
       {s.source === "docker" && <Container size={13} className="shrink-0 text-muted" aria-label="Managed by Docker labels" />}
+      {st?.latencyMs != null && st.status !== "down" && <span className="shrink-0 text-xs tabular-nums text-muted">{st.latencyMs} ms</span>}
       {st && <StatusDot status={st.status} title={tip} />}
     </>
   );
-  const cls = "card flex min-h-14 items-center gap-3 transition-colors hover:border-accent";
+  const tone = st?.status === "down" ? "border-down/60 bg-down/10" : st?.status === "degraded" ? "border-warn/50" : "";
+  const cls = `card flex min-h-14 items-center gap-3 transition-colors hover:border-accent ${tone}`;
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }} className="relative list-none">
       {edit ? (
@@ -59,27 +62,30 @@ function Tile({ s, edit, onEdit, onDelete }: { s: ServiceDTO; edit: boolean; onE
   );
 }
 
-function Section({ group, services, edit, onAdd, onEdit, onDelete, onRename, onRemove }: {
-  group: GroupDTO | null; services: ServiceDTO[]; edit: boolean; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
+function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelete, onRename, onRemove }: {
+  group: GroupDTO | null; services: ServiceDTO[]; edit: boolean; folded?: boolean; onFold?: () => void; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
 }) {
   const id = group?.id ?? UNGROUPED;
   const { setNodeRef } = useDroppable({ id });
   if (!group && !services.length && !edit) return null;
   const down = services.filter((s) => s.status?.status === "down").length;
   return (
-    <section aria-labelledby={`g-${id}`} className="mb-8">
+    <section aria-labelledby={`g-${id}`} className="mb-10">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 id={`g-${id}`} className="text-sm font-semibold uppercase tracking-wide text-muted">{group?.name ?? "Ungrouped"}</h2>
-        {down > 0 && <span className="rounded-full bg-down px-2 text-xs text-white">{down} down</span>}
+        <h2 id={`g-${id}`} className="text-base font-semibold tracking-tight">
+          {group && !edit ? <button className="flex items-center gap-1.5" onClick={onFold} aria-expanded={!folded}><ChevronDown size={16} className={`text-muted transition-transform ${folded ? "-rotate-90" : ""}`} aria-hidden />{group.name}</button> : (group?.name ?? "Ungrouped")}
+        </h2>
+        <span className="text-sm tabular-nums text-muted">{services.length}</span>
+        {down > 0 && <span className="rounded-full bg-down px-2 py-0.5 text-xs font-medium text-white">{down} down</span>}
         {edit && group && <><button className="btn !min-h-7 !px-2 text-xs" onClick={onRename}><Pencil size={12} /> Rename</button><button className="btn btn-danger !min-h-7 !px-2 text-xs" onClick={onRemove}><Trash2 size={12} /></button></>}
         {edit && <button className="btn !min-h-7 !px-2 text-xs" onClick={onAdd}><Plus size={12} /> Service</button>}
       </div>
-      <SortableContext items={services.map((s) => s.id)} strategy={rectSortingStrategy}>
+      {(!folded || edit) && <SortableContext items={services.map((s) => s.id)} strategy={rectSortingStrategy}>
         <ul ref={setNodeRef} className={`grid p-0 ${edit && !services.length ? "min-h-14 items-center justify-items-center rounded-[10px] border border-dashed border-border text-sm text-muted" : "min-h-6"}`} style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,16rem),1fr))", gap: "var(--tile-gap)" }}>
           {services.map((s) => <Tile key={s.id} s={s} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} />)}
           {edit && !services.length && <li className="list-none" aria-hidden>Drop services here</li>}
         </ul>
-      </SortableContext>
+      </SortableContext>}
     </section>
   );
 }
@@ -89,7 +95,9 @@ export function Dashboard() {
   const dlg = useDialogs();
   const router = useRouter();
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard") });
+  const { data, isError, refetch } = useLiveDashboard();
+  const [onlyBad, setOnlyBad] = useState(false);
+  const [folded, setFolded] = useState<Record<string, boolean>>({});
   const [edit, setEdit] = useState(false);
   const [q, setQ] = useState("");
   const [dialog, setDialog] = useState<{ service: ServiceDTO | null; groupId?: string | null } | null>(null);
@@ -100,17 +108,6 @@ export function Dashboard() {
   useEffect(() => { setDark(document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches)); }, []);
   useEffect(() => { if (data?.settings.title) document.title = data.settings.title; }, [data?.settings.title]);
 
-  // Live updates over SSE
-  useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.onmessage = (m) => {
-      const e = JSON.parse(m.data);
-      if (e.type === "config-changed") qc.invalidateQueries({ queryKey: ["dashboard"] });
-      if (e.type === "status") qc.setQueryData<DashboardDTO>(["dashboard"], (d) => d && { ...d, services: d.services.map((s) => (s.status && s.status.id === e.checkId ? { ...s, status: { ...s.status, status: e.status as Status, latencyMs: e.latencyMs as number | null, checkedAt: e.ts as number } } : s)) });
-    };
-    return () => es.close();
-  }, [qc]);
-
   // "/" focuses search
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "/" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); document.getElementById("search")?.focus(); } };
@@ -118,10 +115,15 @@ export function Dashboard() {
   }, []);
 
   const needle = q.trim().toLowerCase();
-  const filtered = useMemo(() => (data?.services ?? []).filter((s) => !needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle))), [data, needle]);
+  const filtered = useMemo(() => (data?.services ?? []).filter((s) => (!onlyBad || s.status?.status === "down" || s.status?.status === "degraded") && (!needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle)))), [data, needle, onlyBad]);
 
-  if (!data) return <div className="grid min-h-dvh place-items-center text-muted" role="status">Loading…</div>;
+  if (!data) return isError
+    ? <div className="grid min-h-dvh place-items-center"><div className="card p-6 text-center" role="alert"><p className="font-medium">Couldn’t load the dashboard</p><button className="btn btn-primary mt-3" onClick={() => refetch()}>Retry</button></div></div>
+    : <div className="grid min-h-dvh place-items-center text-muted" role="status">Loading…</div>;
   const groups = data.groups;
+  const mon = data.services.filter((s) => s.status);
+  const bad = mon.filter((s) => s.status!.status === "down" || s.status!.status === "degraded").length;
+  const summary = mon.length ? { bad: bad > 0, text: bad ? `${bad} of ${mon.length} services need attention` : `All ${mon.length} services up` } : null;
   const by = (gid: string | null) => filtered.filter((s) => (s.groupId ?? null) === gid);
   const refresh = () => qc.invalidateQueries({ queryKey: ["dashboard"] });
   const isEdit = edit && viewer === "admin";
@@ -155,12 +157,26 @@ export function Dashboard() {
     await api("/api/layout", { method: "PUT", body: payload }).catch(refresh);
   }
 
+  function toggleFold(g: GroupDTO) {
+    const next = !(folded[g.id] ?? g.collapsed);
+    setFolded((f) => ({ ...f, [g.id]: next }));
+    if (viewer === "admin") api(`/api/groups/${g.id}`, { method: "PATCH", body: { collapsed: next } }).catch(() => {});
+  }
+
   async function addGroup() { const name = await dlg.prompt("Group name"); if (name?.trim()) { await api("/api/groups", { method: "POST", body: { name: name.trim() } }); refresh(); } }
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-24 pt-4 sm:px-6">
       <header className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto flex items-center gap-2 text-xl font-semibold"><BrandMark size={30} />{data.settings.title}</h1>
+        <div className="mr-auto flex items-center gap-3">
+          <BrandMark size={32} />
+          <div>
+            <h1 className="text-xl font-semibold leading-tight tracking-tight">{data.settings.title}</h1>
+            {summary && (summary.bad
+              ? <button className="flex items-center gap-1.5 text-left text-sm text-down-fg hover:underline" onClick={() => setOnlyBad(!onlyBad)} aria-pressed={onlyBad} title={onlyBad ? "Show all services" : "Show only services that need attention"}><span className="h-2 w-2 rounded-full bg-down" aria-hidden />{summary.text}{onlyBad && " · filtered"}</button>
+              : <p className="flex items-center gap-1.5 text-sm text-muted" role="status"><span className="h-2 w-2 rounded-full bg-ok" aria-hidden />{summary.text}</p>)}
+          </div>
+        </div>
         <Clock />
         <div className="relative w-full sm:w-64 sm:order-none order-last">
           <Search size={16} className="pointer-events-none absolute left-3 top-3 text-muted" aria-hidden />
@@ -188,7 +204,7 @@ export function Dashboard() {
 
       <DndContext sensors={sensors} collisionDetection={collision} onDragEnd={onDragEnd}>
         {groups.map((g) => (
-          <Section key={g.id} group={g} services={by(g.id)} edit={isEdit}
+          <Section key={g.id} group={g} services={by(g.id)} edit={isEdit} folded={!needle && !onlyBad && (folded[g.id] ?? g.collapsed)} onFold={() => toggleFold(g)}
             onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })}
             onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }}
             onRename={async () => { const name = await dlg.prompt("Rename group", g.name); if (name?.trim()) { await api(`/api/groups/${g.id}`, { method: "PATCH", body: { name: name.trim() } }); refresh(); } }}

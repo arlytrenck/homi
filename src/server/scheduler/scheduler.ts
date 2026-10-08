@@ -37,11 +37,21 @@ export class Scheduler {
     this.flushTimer = setInterval(() => this.flush(), 2000);
   }
 
-  reload() { this.next.clear(); }
+  /** Config changed: forget deleted checks, and optionally re-run one immediately. Other schedules are kept. */
+  reload(runSoonId?: string) {
+    if (runSoonId) { this.next.set(runSoonId, 0); return; }
+    const ids = new Set(this.db.select({ id: checks.id }).from(checks).all().map((c) => c.id));
+    for (const id of this.next.keys()) if (!ids.has(id)) this.next.delete(id);
+  }
 
   private tick = () => {
     if (this.stopped) return;
     const now = Date.now();
+    try { this.dispatch(now); } catch (e) { console.error("[homi] scheduler tick failed", e); }
+    this.timer = setTimeout(this.tick, 1000);
+  };
+
+  private dispatch(now: number) {
     const all = this.db.select().from(checks).where(eq(checks.enabled, true)).all();
     for (const c of all) {
       if (!this.next.has(c.id)) {
@@ -52,8 +62,7 @@ export class Scheduler {
       if ((this.next.get(c.id) ?? 0) <= now && !this.running.has(c.id) && this.active < MAX_CONCURRENCY) void this.exec(c);
     }
     if (now - this.lastMaint > 10 * 60_000) { this.lastMaint = now; this.maintenance(now); }
-    this.timer = setTimeout(this.tick, 1000);
-  };
+  }
 
   private async exec(c: Check) {
     this.running.add(c.id); this.active++;
@@ -61,6 +70,8 @@ export class Scheduler {
     try {
       const o = await this.run({ type: c.type, target: c.target, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls });
       this.record(c.id, o);
+    } catch (e) {
+      console.error(`[homi] check ${c.id} failed`, e);
     } finally { this.running.delete(c.id); this.active--; }
   }
 

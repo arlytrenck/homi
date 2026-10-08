@@ -42,7 +42,7 @@
 }
 [data-density="dense"] { --tile-pad: 0.5rem; --tile-gap: 0.5rem; --text-tile: 0.8125rem; --radius: 6px; }
 
-body { background: var(--bg); color: var(--text); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+body { font-feature-settings: "tnum" 0, "cv11", "ss01"; text-rendering: optimizeLegibility; background: var(--bg); color: var(--text); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.5rem; padding: 0 .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: .875rem; cursor: pointer; transition: background 150ms ease-out; }

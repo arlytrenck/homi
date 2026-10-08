@@ -65,6 +65,10 @@ describe("syncDiscovered", () => {
     expect(db.select().from(checks).all()).toHaveLength(1);
     expect(db.select().from(groups).all()).toHaveLength(1);
   });
+  it("reports no update when labels are unchanged", () => {
+    syncDiscovered([plex()], {}, db, t0);
+    expect(syncDiscovered([plex()], {}, db, t0 + 1)).toMatchObject({ created: 0, updated: 0 });
+  });
   it("survives container recreation (same name, new id)", () => {
     syncDiscovered([plex()], {}, db, t0);
     syncDiscovered([{ ...plex(), Id: "new-id" }], {}, db, t0 + 1);
