@@ -15,7 +15,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
     const url = String(f.get("url"));
     return {
       name: String(f.get("name")), url, description: String(f.get("description") || "") || null, icon: String(f.get("icon") || "") || null,
-      groupId: String(f.get("groupId") || "") || null, hiddenPublic: f.get("hiddenPublic") === "on",
+      groupId: String(f.get("groupId") || "") || null, hiddenPublic: f.get("hiddenPublic") === "on", alertsMuted: f.get("alertsMuted") === "on",
       check: monitor ? { type: String(f.get("ctype")) as "http", target: String(f.get("target") || url), intervalS: Number(f.get("intervalS")) || 60, timeoutMs: 5000, httpMethod: String(f.get("httpMethod") || "GET") as "GET", expectedStatus: String(f.get("expectedStatus") || "200-399"), keyword: String(f.get("keyword") || "") || null, ignoreTls: f.get("ignoreTls") === "on", enabled: true } : null,
     };
   }
@@ -23,7 +23,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setErr(null);
     try {
-      const body = service?.source === "docker" ? { groupId: read(e.currentTarget).groupId } : read(e.currentTarget);
+      const body = service?.source === "docker" ? { groupId: read(e.currentTarget).groupId, alertsMuted: read(e.currentTarget).alertsMuted } : read(e.currentTarget);
       await api(service ? `/api/services/${service.id}` : "/api/services", { method: service ? "PATCH" : "POST", body });
       onSaved();
     } catch (x) { setErr(x instanceof ApiClientError ? `${x.message}${x.fields ? " – " + Object.keys(x.fields).join(", ") : ""}` : "Failed to save"); }
@@ -41,7 +41,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
     <dialog ref={ref} onClose={onClose} className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface p-0 text-fg backdrop:bg-black/50 max-sm:mb-0 max-sm:rounded-b-none">
       <form onSubmit={submit} className="space-y-3 p-5">
         <h2 className="text-lg font-semibold">{service ? "Edit service" : "Add service"}</h2>
-        {service?.source === "docker" && <p className="rounded-lg bg-surface-2 p-3 text-sm text-muted">Managed by Docker labels. Change <code>homi.*</code> labels on the container to edit it; here you can only move it to another group.</p>}
+        {service?.source === "docker" && <p className="rounded-lg bg-surface-2 p-3 text-sm text-muted">Managed by Docker labels. Change <code>homi.*</code> labels on the container to edit it; here you can only move it to another group or mute its alerts.</p>}
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className="label" htmlFor="s-name">Name</label><input id="s-name" name="name" className="input" required defaultValue={service?.name} readOnly={service?.source === "docker"} /></div>
           <div><label className="label" htmlFor="s-group">Group</label>
@@ -65,6 +65,7 @@ export function ServiceDialog({ service, groups, defaultGroupId, onClose, onSave
             <div className="flex items-center gap-2"><button type="button" className="btn" onClick={(e) => test(e.currentTarget.form!)}>Test</button><span className="text-sm text-muted" aria-live="polite">{testMsg}</span></div>
           </fieldset>
         )}
+        {monitor && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="alertsMuted" defaultChecked={service?.alertsMuted} /> Mute down/recovery alerts for this service</label>}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="hiddenPublic" defaultChecked={service?.hiddenPublic} disabled={service?.source === "docker"} /> Hide from public view</label>
         {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <div className="flex justify-end gap-2 pt-1"><button type="button" className="btn" onClick={() => ref.current?.close()}>Cancel</button><button className="btn btn-primary">Save</button></div>

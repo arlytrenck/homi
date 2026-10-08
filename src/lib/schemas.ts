@@ -24,10 +24,11 @@ const serviceShape = {
   targetBlank: z.boolean(),
   tags: z.array(z.string().max(32)).max(16),
   hiddenPublic: z.boolean(),
+  alertsMuted: z.boolean(),
   check: CheckInput.nullish(),
 };
 // Defaults live only on the create schema; patch schemas must not inject them.
-export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false) });
+export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false), alertsMuted: serviceShape.alertsMuted.default(false) });
 export const ServicePatch = z.object(serviceShape).partial();
 export type ServiceInput = z.infer<typeof ServiceInput>;
 

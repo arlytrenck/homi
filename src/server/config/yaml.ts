@@ -23,7 +23,7 @@ export function exportYaml(): string {
   const db = getDb();
   const cs = new Map(db.select().from(checks).all().map((c) => [c.serviceId, c]));
   const svcs = db.select().from(services).where(eq(services.source, "manual")).orderBy(asc(services.sort)).all(); // docker-managed services come from labels, not backups
-  const toY = (s: typeof services.$inferSelect) => ({ name: s.name, url: s.url, description: s.description ?? undefined, icon: s.icon ?? undefined, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, check: checkOut(cs.get(s.id)) });
+  const toY = (s: typeof services.$inferSelect) => ({ name: s.name, url: s.url, description: s.description ?? undefined, icon: s.icon ?? undefined, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(s.alertsMuted && { alertsMuted: true }), check: checkOut(cs.get(s.id)) });
   const doc = {
     version: 1,
     groups: db.select().from(groups).orderBy(asc(groups.sort)).all().map((g) => ({ name: g.name, icon: g.icon ?? undefined, services: svcs.filter((s) => s.groupId === g.id).map(toY) })),
@@ -50,7 +50,7 @@ export function importYaml(text: string, opts: { mode: "merge" | "replace"; dryR
         res.servicesUpdated++;
       } else {
         const id = newId(), now = Date.now();
-        tx.insert(services).values({ id, groupId, name: y.name, description: y.description ?? null, url: y.url, icon: y.icon ?? null, sort: nextSort(services), targetBlank: y.targetBlank, tags: y.tags, hiddenPublic: y.hiddenPublic, createdAt: now, updatedAt: now }).run();
+        tx.insert(services).values({ id, groupId, name: y.name, description: y.description ?? null, url: y.url, icon: y.icon ?? null, sort: nextSort(services), targetBlank: y.targetBlank, tags: y.tags, hiddenPublic: y.hiddenPublic, alertsMuted: y.alertsMuted, createdAt: now, updatedAt: now }).run();
         if (check) upsertCheck(id, y.name, CheckInput.parse(check));
         res.servicesCreated++;
       }

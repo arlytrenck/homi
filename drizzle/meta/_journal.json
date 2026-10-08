@@ -15,6 +15,13 @@
       "when": 1791244841097,
       "tag": "0001_pink_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791423094524,
+      "tag": "0002_bitter_mephisto",
+      "breakpoints": true
     }
   ]
 }

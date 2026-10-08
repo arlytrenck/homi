@@ -1,7 +1,7 @@
 import "server-only";
 import { eq, lt, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/server/db/client";
-import { checks, checkResults, checkRollups } from "@/server/db/schema";
+import { checks, checkResults, checkRollups, services } from "@/server/db/schema";
 import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
@@ -86,7 +86,8 @@ export class Scheduler {
       ...(changed ? { lastChangeAt: now } : {}),
     }).where(eq(checks.id, checkId)).run();
     const kind = classify(c.lastStatus, n.status);
-    if (kind) void notifyTransition(this.db, { kind, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
+    const muted = kind && c.serviceId ? this.db.select({ m: services.alertsMuted }).from(services).where(eq(services.id, c.serviceId)).get()?.m : false;
+    if (kind && !muted) void notifyTransition(this.db, { kind, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
   }

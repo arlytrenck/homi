@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, ChartLine, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, BellOff, ChartLine, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useLiveDashboard } from "@/lib/live";
 import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
@@ -40,6 +40,7 @@ function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: bo
         <span className="block truncate font-medium" style={{ fontSize: "var(--text-tile)" }}>{s.name}</span>
         {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
+      {s.alertsMuted && <BellOff size={13} className="shrink-0 text-muted" aria-label="Alerts muted" />}
       {s.source === "docker" && <Container size={13} className="shrink-0 text-muted" aria-label="Managed by Docker labels" />}
       {st?.latencyMs != null && st.status !== "down" && <span className="shrink-0 text-xs tabular-nums text-muted">{st.latencyMs} ms</span>}
       {st && <StatusDot status={st.status} title={tip} />}

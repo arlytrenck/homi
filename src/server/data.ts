@@ -43,7 +43,7 @@ export function dashboardData(opts: { publicOnly: boolean }) {
     services: ss.map((s) => {
       const c = byService.get(s.id);
       return {
-        id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, source: s.source, missing: s.missingSince != null,
+        id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(opts.publicOnly ? {} : { alertsMuted: s.alertsMuted }), source: s.source, missing: s.missingSince != null,
         status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
       };
     }),

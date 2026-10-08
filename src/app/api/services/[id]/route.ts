@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export const PATCH = route({ auth: "admin", body: ServicePatch }, ({ body, params }) => {
   const db = getDb();
   if (isDockerManaged(db, params.id)) {
-    const owned = Object.keys(body).filter((k) => k !== "groupId");
-    if (owned.length) throw new ApiError(409, "managed_by_docker", "This service is managed by Docker labels. Change the container's homi.* labels instead; only its group can be edited here.");
+    const owned = Object.keys(body).filter((k) => k !== "groupId" && k !== "alertsMuted");
+    if (owned.length) throw new ApiError(409, "managed_by_docker", "This service is managed by Docker labels. Change the container's homi.* labels instead; only its group and alert muting can be edited here.");
   }
   const { check, ...rest } = body;
   const set: Record<string, unknown> = { updatedAt: Date.now() };
