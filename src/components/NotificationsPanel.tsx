@@ -3,20 +3,30 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
+import type { DashboardDTO } from "@/lib/types";
 
 type Kind = "webhook" | "ntfy";
-interface Dest { id: string; kind: Kind; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
-interface Row { id?: string; kind: Kind; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
+interface Quiet { enabled: boolean; start: string; end: string; tz: string; digest: boolean; overrideTags: string[] }
+interface Dest { id: string; kind: Kind; groupIds: string[]; tags: string[]; quiet: Quiet | null; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
+interface Row { id?: string; kind: Kind; quiet: Quiet; override: string; scoped: boolean; groupIds: string[]; tags: string; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
 const MAX = 5;
-const blank = (): Row => ({ kind: "webhook", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
+const validTz = (tz: string) => { try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
+const NONE = "__none__";
+const parseTags = (s: string) => [...new Set(s.split(",").map((t) => t.trim()).filter(Boolean))];
+const browserTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "UTC"; } };
+const defaultQuiet = (): Quiet => ({ enabled: false, start: "22:00", end: "07:00", tz: browserTz(), digest: true, overrideTags: [] });
+const blank = (): Row => ({ kind: "webhook", quiet: defaultQuiet(), override: "", scoped: false, groupIds: [], tags: "", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
 
 export function NotificationsPanel() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["notifications"], queryFn: () => api<{ destinations: Dest[] }>("/api/notifications") });
+  const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard") });
+  const groups = dash?.groups ?? [];
+  const knownTags = [...new Set((dash?.services ?? []).flatMap((s) => s.tags))].sort();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [note, setNote] = useState("");
-  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "" })) : [blank()]); }, [data]);
+  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "", quiet: d.quiet ?? defaultQuiet(), override: (d.quiet?.overrideTags ?? []).join(", "), tags: d.tags.join(", "), scoped: d.groupIds.length + d.tags.length > 0 })) : [blank()]); }, [data]);
   if (!rows) return null;
   const set = (i: number, patch: Partial<Row>) => setRows((r) => r!.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const many = rows.length > 1;
@@ -25,9 +35,12 @@ export function NotificationsPanel() {
     <section className="card space-y-3 p-5" aria-labelledby="h-notify">
       <h2 id="h-notify" className="font-semibold">Alerts</h2>
       <p className="text-sm text-muted">Get a message when a service goes down, and when it comes back. Add up to {MAX} destinations. URLs are stored encrypted.</p>
+      <datalist id="n-known-tags">{knownTags.map((t) => <option key={t} value={t} />)}</datalist>
       <form className="space-y-3" onSubmit={async (e) => {
         e.preventDefault(); setNote("");
-        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery }));
+        const badTz = rows.find((r) => r.quiet.enabled && !validTz(r.quiet.tz));
+        if (badTz) { setNote(`Unknown time zone “${badTz.quiet.tz}” (use e.g. Europe/Berlin)`); return; }
+        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery, groupIds: r.scoped ? r.groupIds : [], tags: r.scoped ? parseTags(r.tags) : [], quiet: { ...r.quiet, overrideTags: parseTags(r.override) } }));
         try { await api("/api/notifications", { method: "PUT", body: { destinations } }); await qc.invalidateQueries({ queryKey: ["notifications"] }); setNote("Saved"); } catch (x) { setNote(msg(x)); }
       }}>
         {rows.map((r, i) => (
@@ -39,6 +52,36 @@ export function NotificationsPanel() {
               <input id={`n-url-${i}`} type="url" className="input" placeholder={r.urlSet ? "••••••••" : "https://"} autoComplete="off" value={r.url} onChange={(e) => set(i, { url: e.target.value })} /></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} /> Send alerts</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.onRecovery} onChange={(e) => set(i, { onRecovery: e.target.checked })} /> Also notify on recovery</label>
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor={`n-scope-${i}`}>Alert for</label>
+              <select id={`n-scope-${i}`} className="input sm:!w-auto" value={r.scoped ? "groups" : "all"} onChange={(e) => set(i, { scoped: e.target.value === "groups" })}><option value="all">All services</option><option value="groups">Only selected groups or tags</option></select>
+              {r.scoped && (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1" role="group" aria-label={`Groups for destination ${i + 1}`}>
+                  {[...groups.map((g) => ({ id: g.id, name: g.name })), { id: NONE, name: "Ungrouped" }].map((g) => (
+                    <label key={g.id} className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={r.groupIds.includes(g.id)} onChange={(e) => set(i, { groupIds: e.target.checked ? [...r.groupIds, g.id] : r.groupIds.filter((x) => x !== g.id) })} /> {g.name}</label>
+                  ))}
+                  <div className="w-full">
+                    <label className="label" htmlFor={`n-tags-${i}`}>Tags (comma-separated)</label>
+                    <input id={`n-tags-${i}`} className="input" list="n-known-tags" placeholder="e.g. critical, media" value={r.tags} onChange={(e) => set(i, { tags: e.target.value })} />
+                  </div>
+                  <p className="w-full text-xs text-muted">Services in any selected group, or carrying any listed tag, are routed here.</p>
+                  {!r.groupIds.length && !parseTags(r.tags).length && <p className="w-full text-xs text-warn-fg">No group or tag selected: this destination will receive alerts for all services.</p>}
+                </div>
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.quiet.enabled} onChange={(e) => set(i, { quiet: { ...r.quiet, enabled: e.target.checked } })} /> Quiet hours (hold alerts during a daily window)</label>
+              {r.quiet.enabled && (
+                <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                  <div><label className="label" htmlFor={`n-qs-${i}`}>From</label><input id={`n-qs-${i}`} type="time" className="input" value={r.quiet.start} onChange={(e) => set(i, { quiet: { ...r.quiet, start: e.target.value } })} /></div>
+                  <div><label className="label" htmlFor={`n-qe-${i}`}>Until</label><input id={`n-qe-${i}`} type="time" className="input" value={r.quiet.end} onChange={(e) => set(i, { quiet: { ...r.quiet, end: e.target.value } })} /></div>
+                  <div><label className="label" htmlFor={`n-qz-${i}`}>Time zone</label><input id={`n-qz-${i}`} className="input" value={r.quiet.tz} onChange={(e) => set(i, { quiet: { ...r.quiet, tz: e.target.value } })} /></div>
+                  <label className="flex items-center gap-2 text-sm sm:col-span-3"><input type="checkbox" checked={r.quiet.digest} onChange={(e) => set(i, { quiet: { ...r.quiet, digest: e.target.checked } })} /> Send one summary of services still down when quiet hours end</label>
+                  <div className="sm:col-span-3"><label className="label" htmlFor={`n-qo-${i}`}>Always alert for tags (comma-separated)</label><input id={`n-qo-${i}`} className="input" list="n-known-tags" placeholder="e.g. critical" value={r.override} onChange={(e) => set(i, { override: e.target.value })} /></div>
+                  <p className="text-xs text-muted sm:col-span-3">Services with one of these tags are alerted even during quiet hours. Other alerts, including recoveries, raised inside the window are not sent. Windows can cross midnight.</p>
+                </div>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
               <button type="button" className="btn" onClick={async () => {
                 set(i, { note: "Sending…" });

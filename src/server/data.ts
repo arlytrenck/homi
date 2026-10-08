@@ -1,6 +1,8 @@
 import "server-only";
+import crypto from "node:crypto";
 import { eq, asc, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
+import { activeWindows, inMaintenance } from "@/server/maintenance";
 import { groups, services, checks, widgets, integrations } from "@/server/db/schema";
 import { newId } from "@/server/auth/session";
 import { widgetRegistry } from "@/plugins/registry";
@@ -18,9 +20,10 @@ export function upsertCheck(serviceId: string, name: string, c: NonNullable<Serv
   const db = getDb();
   const vals = { name, type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword ?? null, ignoreTls: c.ignoreTls, enabled: c.enabled };
   const ex = db.select().from(checks).where(eq(checks.serviceId, serviceId)).get();
+  const token = c.type === "heartbeat" && !ex?.token ? crypto.randomBytes(18).toString("base64url") : undefined;
   let id = ex?.id;
-  if (ex) db.update(checks).set(vals).where(eq(checks.id, ex.id)).run();
-  else { id = newId(); db.insert(checks).values({ id, serviceId, ...vals }).run(); }
+  if (ex) db.update(checks).set({ ...vals, ...(token && { token }) }).where(eq(checks.id, ex.id)).run();
+  else { id = newId(); db.insert(checks).values({ id, serviceId, ...vals, token: token ?? null }).run(); }
   getScheduler()?.reload(id); // pick up the new settings right away
 }
 
@@ -36,15 +39,18 @@ export function dashboardData(opts: { publicOnly: boolean }) {
   const cs = db.select().from(checks).all();
   const byService = new Map(cs.map((c) => [c.serviceId, c]));
   const ws = db.select().from(widgets).orderBy(asc(widgets.sort)).all().filter((w) => !opts.publicOnly || !w.hiddenPublic);
+  const wins = activeWindows(db);
+  const visible = new Set(ss.map((s) => s.id));
   const ints = new Map(db.select({ id: integrations.id, name: integrations.name }).from(integrations).all().map((i) => [i.id, i.name]));
   return {
     widgets: ws.map((w) => ({ id: w.id, kind: w.kind, kindTitle: widgetRegistry[w.kind]?.title ?? w.kind, title: w.title, size: w.size, area: w.area, hiddenPublic: w.hiddenPublic, integrationId: w.integrationId, integrationName: w.integrationId ? ints.get(w.integrationId) ?? null : null, ...(opts.publicOnly ? {} : { options: w.options }) })),
     groups: gs.map((g) => ({ id: g.id, name: g.name, icon: g.icon, collapsed: g.collapsed })),
     services: ss.map((s) => {
       const c = byService.get(s.id);
+      const maintenance = inMaintenance(wins, s);
       return {
-        id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(opts.publicOnly ? {} : { alertsMuted: s.alertsMuted }), source: s.source, missing: s.missingSince != null,
-        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
+        id: s.id, groupId: s.groupId, name: s.name, description: s.description, url: s.url, icon: s.icon, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(opts.publicOnly ? {} : { alertsMuted: s.alertsMuted }), ...(s.dependsOnId && visible.has(s.dependsOnId) ? { dependsOnId: s.dependsOnId } : {}), source: s.source, ...(maintenance && { maintenance }), missing: s.missingSince != null,
+        status: c ? { id: c.id, status: c.lastStatus, latencyMs: c.lastLatencyMs, checkedAt: c.lastCheckedAt, changedAt: c.lastChangeAt, enabled: c.enabled, ...(opts.publicOnly ? {} : { type: c.type, token: c.token, target: c.target, intervalS: c.intervalS, timeoutMs: c.timeoutMs, httpMethod: c.httpMethod, expectedStatus: c.expectedStatus, keyword: c.keyword, ignoreTls: c.ignoreTls }) } : null,
       };
     }),
   };

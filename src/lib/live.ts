@@ -7,7 +7,7 @@ import type { DashboardDTO, Status } from "./types";
 /** Dashboard data kept live over SSE: status events patch the cache in place; config changes and reconnects refetch. */
 export function useLiveDashboard() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard"), retry: 1 });
+  const q = useQuery({ queryKey: ["dashboard"], queryFn: () => api<DashboardDTO>("/api/dashboard"), retry: 1, refetchInterval: 60_000 }); // also picks up maintenance windows starting or ending
   useEffect(() => {
     const es = new EventSource("/api/events");
     let opened = false;

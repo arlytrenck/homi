@@ -23,7 +23,7 @@ describe("alert muting", () => {
   it("alerts when a service goes down", () => {
     down();
     expect(sent).toHaveBeenCalledTimes(1);
-    expect(sent.mock.calls[0][1]).toMatchObject({ kind: "down", name: "x" });
+    expect(sent.mock.calls[0][1]).toMatchObject({ kind: "down", name: "x", groupId: null });
   });
   it("stays silent for a muted service", () => {
     db.update(services).set({ alertsMuted: true }).where(eq(services.id, "s1")).run();

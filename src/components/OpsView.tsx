@@ -40,7 +40,7 @@ export function OpsView({ kiosk }: { kiosk: boolean }) {
   const counts = rows.reduce((m, s) => ({ ...m, [s.status!.status]: (m[s.status!.status] ?? 0) + 1 }), {} as Record<string, number>);
   return (
     <main data-density="dense" className="mx-auto max-w-7xl px-4 py-3">
-      {!kiosk && <Link href="/" className="btn mb-3 !min-h-8"><ArrowLeft size={14} /> Dashboard</Link>}
+      {!kiosk && <div className="mb-3 flex gap-2"><Link href="/" className="btn !min-h-8"><ArrowLeft size={14} /> Dashboard</Link><Link href="/incidents" className="btn !min-h-8">Incidents</Link></div>}
       <div className="mb-3 flex flex-wrap gap-4 text-sm" role="status">
         {(["down", "degraded", "up", "unknown"] as Status[]).map((s) => <span key={s} className="flex items-center gap-1.5"><StatusDot status={s} /> {counts[s] ?? 0} {s}</span>)}
       </div>
@@ -51,7 +51,7 @@ export function OpsView({ kiosk }: { kiosk: boolean }) {
             {rows.map((s) => (
               <tr key={s.id} className="border-t border-border">
                 <td className="p-2 font-medium">{s.name}</td>
-                <td className="p-2"><span className="flex items-center gap-1.5 capitalize"><StatusDot status={s.status!.status} /> {s.status!.status}</span></td>
+                <td className="p-2"><span className="flex items-center gap-1.5 capitalize"><StatusDot status={s.status!.status} /> {s.status!.status}{s.maintenance && <span className="rounded-full bg-surface-2 px-1.5 text-[11px] normal-case text-warn-fg">maintenance</span>}</span></td>
                 <td className="p-2 text-right tabular-nums">{s.status!.latencyMs != null ? `${s.status!.latencyMs} ms` : "–"}</td>
                 <td className="p-2"><Bar checkId={s.status!.id} /></td>
                 <td className="p-2 text-xs text-muted max-md:hidden">{s.status!.changedAt ? new Date(s.status!.changedAt).toLocaleString() : "–"}</td>

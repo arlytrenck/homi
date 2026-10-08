@@ -45,6 +45,7 @@ services:
 | `homi.description` | Short text under the name. |
 | `homi.check` | `http` (default), `tcp`, `ping` or `none`. |
 | `homi.check.target` | Check target. `http`: URL (defaults to `homi.url`). `tcp`: `host:port` (required). `ping`: host (defaults to the URL's host). |
+| `homi.tags` | Comma-separated tags (up to 16). Searchable, and usable for alert routing in Settings → Alerts. |
 | `homi.public` | `false` hides the service from the public view. |
 
 A container with invalid labels is skipped and the reason is shown in **Settings → Docker discovery**. If a previously valid container gets a bad label, its existing tile is kept rather than removed.

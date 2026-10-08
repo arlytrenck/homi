@@ -6,8 +6,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, BellOff, ChartLine, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, BellOff, ChartLine, Wrench, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { isDark, toggleTheme } from "@/lib/theme";
 import { useLiveDashboard } from "@/lib/live";
 import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
 import { useViewer } from "./Providers";
@@ -29,7 +30,7 @@ const collision: CollisionDetection = (args) => {
   return hits.length ? hits : rectIntersection(args);
 };
 
-function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: boolean; onEdit: () => void; onDelete: () => void; onDetail: () => void }) {
+function Tile({ s, upstream, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; upstream?: string; edit: boolean; onEdit: () => void; onDelete: () => void; onDetail: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: s.id, disabled: !edit });
   const st = s.status;
   const tip = st ? `${st.status}${st.latencyMs != null ? ` · ${st.latencyMs} ms` : ""}` : "Not monitored";
@@ -38,15 +39,16 @@ function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: bo
       <ServiceIcon icon={s.icon} name={s.name} />
       <span className="min-w-[5rem] flex-1">
         <span className="block truncate font-medium" style={{ fontSize: "var(--text-tile)" }}>{s.name}</span>
-        {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
+        {upstream && st?.status === "down" ? <span className="block truncate text-xs text-warn-fg">Affected by {upstream}</span> : (s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
+      {s.maintenance && <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-1.5 py-0.5 text-[11px] text-warn-fg"><Wrench size={11} aria-hidden />Maintenance</span>}
       {s.alertsMuted && <BellOff size={13} className="shrink-0 text-muted" aria-label="Alerts muted" />}
       {s.source === "docker" && <Container size={13} className="shrink-0 text-muted" aria-label="Managed by Docker labels" />}
       {st?.latencyMs != null && st.status !== "down" && <span className="shrink-0 text-xs tabular-nums text-muted">{st.latencyMs} ms</span>}
       {st && <StatusDot status={st.status} title={tip} />}
     </>
   );
-  const tone = st?.status === "down" ? "border-down/60 bg-down/10" : st?.status === "degraded" ? "border-warn/50" : "";
+  const tone = s.maintenance || (upstream && st?.status === "down") ? "border-warn/40" : st?.status === "down" ? "border-down/60 bg-down/10" : st?.status === "degraded" ? "border-warn/50" : "";
   const cls = `card flex min-h-14 items-center gap-3 transition-colors hover:border-accent ${tone}`;
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }} className="relative list-none">
@@ -67,13 +69,13 @@ function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: bo
   );
 }
 
-function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelete, onDetail, onRename, onRemove }: {
-  group: GroupDTO | null; services: ServiceDTO[]; edit: boolean; folded?: boolean; onFold?: () => void; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onDetail: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
+function Section({ group, services, upstreamOf, edit, folded, onFold, onAdd, onEdit, onDelete, onDetail, onRename, onRemove }: {
+  group: GroupDTO | null; services: ServiceDTO[]; upstreamOf: (s: ServiceDTO) => string | undefined; edit: boolean; folded?: boolean; onFold?: () => void; onAdd: () => void; onEdit: (s: ServiceDTO) => void; onDelete: (s: ServiceDTO) => void; onDetail: (s: ServiceDTO) => void; onRename?: () => void; onRemove?: () => void;
 }) {
   const id = group?.id ?? UNGROUPED;
   const { setNodeRef } = useDroppable({ id });
   if (!group && !services.length && !edit) return null;
-  const down = services.filter((s) => s.status?.status === "down").length;
+  const down = services.filter((s) => s.status?.status === "down" && !s.maintenance && !upstreamOf(s)).length;
   return (
     <section aria-labelledby={`g-${id}`} className="mb-10">
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -87,7 +89,7 @@ function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelet
       </div>
       {(!folded || edit) && <SortableContext items={services.map((s) => s.id)} strategy={rectSortingStrategy}>
         <ul ref={setNodeRef} className={`grid p-0 ${edit && !services.length ? "min-h-14 items-center justify-items-center rounded-[10px] border border-dashed border-border text-sm text-muted" : "min-h-6"}`} style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,16rem),1fr))", gap: "var(--tile-gap)" }}>
-          {services.map((s) => <Tile key={s.id} s={s} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} onDetail={() => onDetail(s)} />)}
+          {services.map((s) => <Tile key={s.id} s={s} upstream={upstreamOf(s)} edit={edit} onEdit={() => onEdit(s)} onDelete={() => onDelete(s)} onDetail={() => onDetail(s)} />)}
           {edit && !services.length && <li className="list-none" aria-hidden>Drop services here</li>}
         </ul>
       </SortableContext>}
@@ -111,7 +113,7 @@ export function Dashboard() {
   const [dark, setDark] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
-  useEffect(() => { setDark(document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches)); }, []);
+  useEffect(() => { setDark(isDark()); const h = () => setDark(isDark()); addEventListener("homi-theme", h); return () => removeEventListener("homi-theme", h); }, []);
   useEffect(() => { if (data?.settings.title) document.title = data.settings.title; }, [data?.settings.title]);
 
   // "/" focuses search
@@ -121,24 +123,28 @@ export function Dashboard() {
   }, []);
 
   const needle = q.trim().toLowerCase();
-  const filtered = useMemo(() => (data?.services ?? []).filter((s) => (!onlyBad || s.status?.status === "down" || s.status?.status === "degraded") && (!needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle)))), [data, needle, onlyBad]);
+  const filtered = useMemo(() => (data?.services ?? []).filter((s) => (!onlyBad || (!s.maintenance && (s.status?.status === "down" || s.status?.status === "degraded"))) && (!needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle)))), [data, needle, onlyBad]);
 
   if (!data) return isError
     ? <div className="grid min-h-dvh place-items-center"><div className="card p-6 text-center" role="alert"><p className="font-medium">Couldn’t load the dashboard</p><button className="btn btn-primary mt-3" onClick={() => refetch()}>Retry</button></div></div>
     : <div className="grid min-h-dvh place-items-center text-muted" role="status">Loading…</div>;
   const groups = data.groups;
-  const mon = data.services.filter((s) => s.status);
-  const bad = mon.filter((s) => s.status!.status === "down" || s.status!.status === "degraded").length;
-  const summary = mon.length ? { bad: bad > 0, text: bad ? `${bad} of ${mon.length} services need attention` : `All ${mon.length} services up` } : null;
+  const byId = new Map(data.services.map((s) => [s.id, s]));
+  /** Nearest upstream service that is down: this service is a consequence, not a separate problem. */
+  const upstreamOf = (s: ServiceDTO): string | undefined => {
+    const seen = new Set([s.id]);
+    for (let p = s.dependsOnId ? byId.get(s.dependsOnId) : undefined; p && !seen.has(p.id); p = p.dependsOnId ? byId.get(p.dependsOnId) : undefined) {
+      seen.add(p.id);
+      if (p.status?.status === "down") return p.name;
+    }
+  };
+  const mon = data.services.filter((s) => s.status && !s.maintenance);
+  const affected = mon.filter((s) => s.status!.status === "down" && upstreamOf(s)).length;
+  const bad = mon.filter((s) => (s.status!.status === "down" || s.status!.status === "degraded") && !(s.status!.status === "down" && upstreamOf(s))).length;
+  const summary = mon.length ? { bad: bad > 0 || affected > 0, text: bad ? `${bad} of ${mon.length} services need attention${affected ? ` (+${affected} affected)` : ""}` : affected ? `${affected} affected by an upstream outage` : `All ${mon.length} services up` } : null;
   const by = (gid: string | null) => filtered.filter((s) => (s.groupId ?? null) === gid);
   const refresh = () => qc.invalidateQueries({ queryKey: ["dashboard"] });
   const isEdit = edit && viewer === "admin";
-
-  async function toggleTheme() {
-    const next = dark ? "light" : "dark";
-    document.documentElement.dataset.theme = next; document.cookie = `homi_theme=${next}; path=/; max-age=31536000; samesite=lax`; setDark(!dark);
-    if (viewer === "admin") api("/api/settings", { method: "PATCH", body: { theme: next } }).catch(() => {});
-  }
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -186,10 +192,10 @@ export function Dashboard() {
         <Clock />
         <div className="relative w-full sm:w-64 sm:order-none order-last">
           <Search size={16} className="pointer-events-none absolute left-3 top-3 text-muted" aria-hidden />
-          <input id="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && filtered[0]) window.open(filtered[0].url, filtered[0].targetBlank ? "_blank" : "_self", "noopener"); if (e.key === "Escape") { setQ(""); (e.target as HTMLElement).blur(); } }} className="input !pl-9" placeholder="Search…  ( / )" aria-label="Search services" />
+          <input id="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && filtered[0]) window.open(filtered[0].url, filtered[0].targetBlank ? "_blank" : "_self", "noopener"); if (e.key === "Escape") { setQ(""); (e.target as HTMLElement).blur(); } }} className="input !pl-9" placeholder="Search…  ( / )  ·  ⌘K" aria-label="Search services" />
         </div>
         <Link href="/ops" className="btn" aria-label="Ops view"><Activity size={16} /><span className="max-sm:hidden">Ops</span></Link>
-        <button className="btn" onClick={toggleTheme} aria-label="Toggle theme">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
+        <button className="btn" onClick={() => toggleTheme(viewer === "admin")} aria-label="Toggle theme">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
         {viewer === "admin" ? (
           <>
             <button className={`btn ${edit ? "btn-primary" : ""}`} onClick={() => setEdit(!edit)} aria-pressed={edit}>{edit ? <><Check size={16} /> Done</> : <><Pencil size={16} /><span className="max-sm:hidden">Edit</span></>}</button>
@@ -210,13 +216,13 @@ export function Dashboard() {
 
       <DndContext sensors={sensors} collisionDetection={collision} onDragEnd={onDragEnd}>
         {groups.map((g) => (
-          <Section key={g.id} group={g} services={by(g.id)} edit={isEdit} folded={!needle && !onlyBad && (folded[g.id] ?? g.collapsed)} onFold={() => toggleFold(g)}
+          <Section key={g.id} group={g} services={by(g.id)} upstreamOf={upstreamOf} edit={isEdit} folded={!needle && !onlyBad && (folded[g.id] ?? g.collapsed)} onFold={() => toggleFold(g)}
             onAdd={() => setDialog({ service: null, groupId: g.id })} onEdit={(s) => setDialog({ service: s })} onDetail={(s) => setDetail(s.id)}
             onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }}
             onRename={async () => { const name = await dlg.prompt("Rename group", g.name); if (name?.trim()) { await api(`/api/groups/${g.id}`, { method: "PATCH", body: { name: name.trim() } }); refresh(); } }}
             onRemove={async () => { if (await dlg.confirm(`Delete group "${g.name}"? Its services become ungrouped.`)) { await api(`/api/groups/${g.id}`, { method: "DELETE" }); refresh(); } }} />
         ))}
-        <Section group={null} services={by(null)} edit={isEdit} onAdd={() => setDialog({ service: null })} onEdit={(s) => setDialog({ service: s })} onDetail={(s) => setDetail(s.id)}
+        <Section group={null} services={by(null)} upstreamOf={upstreamOf} edit={isEdit} onAdd={() => setDialog({ service: null })} onEdit={(s) => setDialog({ service: s })} onDetail={(s) => setDetail(s.id)}
           onDelete={async (s) => { if (await dlg.confirm(`Delete ${s.name}?`)) { await api(`/api/services/${s.id}`, { method: "DELETE" }); refresh(); } }} />
       </DndContext>
 
@@ -230,7 +236,7 @@ export function Dashboard() {
       {needle && !filtered.length && <p className="text-center text-muted">No matches for “{q}”.</p>}
       {detail && data.services.find((s) => s.id === detail)?.status && <ServiceDetail service={data.services.find((s) => s.id === detail)!} onClose={() => setDetail(null)} />}
       {wdialog && <WidgetDialog widget={wdialog.widget} onClose={() => setWdialog(null)} onSaved={() => { setWdialog(null); qc.invalidateQueries({ queryKey: ["widget"] }); refresh(); }} />}
-      {dialog && <ServiceDialog service={dialog.service} groups={groups} defaultGroupId={dialog.groupId} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); refresh(); }} />}
+      {dialog && <ServiceDialog service={dialog.service} groups={groups} services={data.services} defaultGroupId={dialog.groupId} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); refresh(); }} />}
     </main>
   );
 }

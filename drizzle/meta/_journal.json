@@ -22,6 +22,34 @@
       "when": 1791423094524,
       "tag": "0002_bitter_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791426827602,
+      "tag": "0003_soft_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791427068580,
+      "tag": "0004_lucky_scream",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791427300669,
+      "tag": "0005_same_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791428763584,
+      "tag": "0006_legal_gideon",
+      "breakpoints": true
     }
   ]
 }
