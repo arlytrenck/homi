@@ -51,6 +51,14 @@ describe("Scheduler.record / maintenance", () => {
     expect(db.select().from(checkResults).all()).toHaveLength(3);
     expect(db.select().from(checks).get()!.lastStatus).toBe("up");
   });
+  it("drops buffered results of a deleted check instead of throwing", () => {
+    db.insert(checks).values({ id: "c2", serviceId: null, name: "gone", type: "http", target: "http://y" }).run();
+    s.record("c1", { ok: true, latencyMs: 1 });
+    s.record("c2", { ok: true, latencyMs: 1 });
+    db.delete(checks).where(eq(checks.id, "c2")).run();
+    expect(() => s.flush()).not.toThrow();
+    expect(db.select().from(checkResults).all().map((r) => r.checkId)).toEqual(["c1"]);
+  });
   it("prunes raw results older than retention but keeps rollups", () => {
     const old = Date.now() - 100 * 3600_000;
     s.record("c1", { ok: true, latencyMs: 1 }, old);

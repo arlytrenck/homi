@@ -5,6 +5,7 @@ import { Wrench, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { ServiceDTO } from "@/lib/types";
 import { StatusDot } from "./StatusDot";
+import { fmtDuration, type Incident } from "./IncidentsView";
 import { useViewer } from "./Providers";
 
 const RANGES = ["24h", "7d", "30d", "90d"] as const;
@@ -45,6 +46,7 @@ export function ServiceDetail({ service, onClose }: { service: ServiceDTO; onClo
   const pause = async (minutes: number) => { try { await api("/api/maintenance", { method: "POST", body: { kind: "service", targetId: service.id, minutes } }); qc.invalidateQueries({ queryKey: ["dashboard"] }); setPauseNote("Alerts held"); } catch { setPauseNote("Failed"); } };
   useEffect(() => { ref.current?.showModal(); }, []);
   const { data, isLoading } = useQuery({ queryKey: ["hist-detail", st.id, range], queryFn: () => api<Hist>(`/api/checks/${st.id}/history?range=${range}`), refetchInterval: 60_000 });
+  const { data: inc } = useQuery({ queryKey: ["incidents", st.id], queryFn: () => api<{ incidents: Incident[] }>(`/api/incidents?checkId=${st.id}&limit=5`) });
   const stats = useMemo(() => {
     const l = (data?.points ?? []).map((p) => p.latencyMs).filter((v): v is number => v != null);
     return l.length ? { avg: Math.round(l.reduce((a, b) => a + b, 0) / l.length), min: Math.round(Math.min(...l)), max: Math.round(Math.max(...l)) } : null;
@@ -73,6 +75,12 @@ export function ServiceDetail({ service, onClose }: { service: ServiceDTO; onClo
           <div>
             <h3 className="mb-1 text-xs font-medium text-muted">Recent errors</h3>
             <ul className="max-h-32 space-y-0.5 overflow-y-auto text-xs">{[...data.errors].reverse().map((e, i) => <li key={i} className="flex gap-2"><span className="shrink-0 tabular-nums text-muted">{new Date(e.ts).toLocaleString()}</span><span className="truncate">{e.error}</span></li>)}</ul>
+          </div>
+        )}
+        {!!inc?.incidents.length && (
+          <div>
+            <h3 className="mb-1 text-xs font-medium text-muted">Recent incidents</h3>
+            <ul className="space-y-0.5 text-xs">{inc.incidents.map((i) => <li key={i.id} className="flex gap-2"><span className="shrink-0 tabular-nums text-muted">{new Date(i.startedAt).toLocaleString()}</span><span>{i.endedAt ? fmtDuration(i.endedAt - i.startedAt) : "ongoing"}{i.affectedBy ? ` · affected by ${i.affectedBy}` : ""}</span></li>)}</ul>
           </div>
         )}
         {admin && (

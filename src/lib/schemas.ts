@@ -26,6 +26,8 @@ const serviceShape = {
   tags: z.array(z.string().max(32)).max(16),
   hiddenPublic: z.boolean(),
   alertsMuted: z.boolean(),
+  /** upstream service id; null/omitted = none */
+  dependsOnId: z.string().max(40).nullish(),
   check: CheckInput.nullish(),
 };
 // Defaults live only on the create schema; patch schemas must not inject them.

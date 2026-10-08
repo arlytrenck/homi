@@ -6,6 +6,8 @@ import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
 import { classify, digestTick, notifyTransition } from "@/server/notify/notify";
+import { downAncestor, descendants } from "@/server/dependencies";
+import { closeIncident, openIncident, pruneIncidents } from "@/server/incidents";
 import { activeWindows, inMaintenance, maintenanceTick } from "@/server/maintenance";
 
 type Check = typeof checks.$inferSelect;
@@ -100,19 +102,40 @@ export class Scheduler {
       ...(changed ? { lastChangeAt: now } : {}),
     }).where(eq(checks.id, checkId)).run();
     const kind = classify(c.lastStatus, n.status);
-    const svc = kind && c.serviceId ? this.db.select({ muted: services.alertsMuted, groupId: services.groupId, tags: services.tags }).from(services).where(eq(services.id, c.serviceId)).get() : undefined;
+    const svc = c.serviceId ? this.db.select({ muted: services.alertsMuted, groupId: services.groupId, tags: services.tags }).from(services).where(eq(services.id, c.serviceId)).get() : undefined;
+    const upstream = n.status === "down" && c.lastStatus !== "down" && c.serviceId ? downAncestor(this.db, c.serviceId) : null;
+    if (n.status === "down" && c.lastStatus !== "down") openIncident(this.db, checkId, c.name, now, o.error, upstream?.name);
+    else if (c.lastStatus === "down" && n.status !== "down") closeIncident(this.db, checkId, now);
     const paused = kind && svc && inMaintenance(activeWindows(this.db, now), { id: c.serviceId!, groupId: svc.groupId });
-    if (kind && !svc?.muted && !paused) void notifyTransition(this.db, { kind, groupId: svc?.groupId, tags: svc?.tags, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
+    // A service whose upstream is already down is a consequence, not a separate outage: one alert for the root cause.
+    if (kind && !svc?.muted && !paused && !(kind === "down" && upstream)) void notifyTransition(this.db, { kind, groupId: svc?.groupId, tags: svc?.tags, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
+    if (kind === "recovered" && c.serviceId) this.followUpDependents(c.serviceId, c.name, now);
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
+  }
+
+  /** Dependents that stayed quiet because this service was down, but are still down now that it is back. */
+  private followUpDependents(serviceId: string, upstreamName: string, now: number) {
+    const ids = new Set(descendants(this.db, serviceId));
+    if (!ids.size) return;
+    const wins = activeWindows(this.db, now);
+    const rows = this.db.select({ id: services.id, name: services.name, groupId: services.groupId, tags: services.tags, muted: services.alertsMuted, target: checks.target }).from(checks).innerJoin(services, eq(services.id, checks.serviceId)).where(eq(checks.lastStatus, "down")).all();
+    for (const r of rows) {
+      if (!ids.has(r.id) || r.muted || inMaintenance(wins, r) || downAncestor(this.db, r.id)) continue;
+      void notifyTransition(this.db, { kind: "down", groupId: r.groupId, tags: r.tags, name: r.name, status: "down", previous: "down", target: r.target, error: `still down after ${upstreamName} recovered`, ts: now });
+    }
   }
 
   flush() {
     if (!this.buffer.length) return;
     const rows = this.buffer.splice(0);
-    this.db.transaction((tx) => {
-      for (const r of rows) tx.insert(checkResults).values({ checkId: r.checkId, ts: r.ts, ok: r.o.ok, latencyMs: r.o.latencyMs, code: r.o.code ?? null, error: r.o.error ?? null }).run();
-    });
+    try {
+      this.db.transaction((tx) => {
+        // A service deleted since its result was buffered no longer has a check to attach the row to.
+        const live = new Set(tx.select({ id: checks.id }).from(checks).all().map((c) => c.id));
+        for (const r of rows) if (live.has(r.checkId)) tx.insert(checkResults).values({ checkId: r.checkId, ts: r.ts, ok: r.o.ok, latencyMs: r.o.latencyMs, code: r.o.code ?? null, error: r.o.error ?? null }).run();
+      });
+    } catch (e) { console.error("[homi] could not write check results", e); } // never let a timer callback take the process down
   }
 
   /** Roll raw results into hourly buckets, then prune raw rows past retention. */

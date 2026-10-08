@@ -3,6 +3,7 @@ import { and, eq, gt, lte, lt } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
 import { checks, maintenanceWindows, services } from "@/server/db/schema";
 import { notifyTransition } from "@/server/notify/notify";
+import { pruneIncidents } from "@/server/incidents";
 
 export type Window = typeof maintenanceWindows.$inferSelect;
 const DAY = 86_400_000;
@@ -34,4 +35,5 @@ export async function maintenanceTick(db: Db, now = Date.now()): Promise<void> {
     }
   }
   db.delete(maintenanceWindows).where(lt(maintenanceWindows.endsAt, now - 7 * DAY)).run();
+  pruneIncidents(db, now);
 }

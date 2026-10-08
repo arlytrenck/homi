@@ -8,8 +8,10 @@
 - **Alert routing**: limit each destination to selected groups, ungrouped services, or tags (a match on any selector routes the alert); a destination with none selected gets everything. Services now have editable tags (also via the `homi.tags` Docker label). Deleting a group removes it from routing.
 - **Quiet hours**: per-destination daily window (time zone aware, may cross midnight) during which alerts are held (except for services carrying a configured override tag such as `critical`, which always alert), with an optional single summary of services still down when it ends. Held alerts are dropped, not queued; a restart inside the window widens the summary to the last 12 hours.
 - **Maintenance windows**: hold alerts for everything, a group or one service for a set time (Settings → Maintenance, or the service detail dialog). Checks keep running; tiles show a Maintenance badge; one "still down" alert is sent when a window ends. Recurring windows are not supported yet.
+- **Dependencies**: a service can depend on another; when the upstream is down its dependents show "Affected by …" and stay quiet (one alert for the root cause, plus a follow-up if a dependent is still down after the upstream recovers). Not included in YAML backups yet.
+- **Incident log**: every outage is recorded (start, duration, cause or upstream) under Ops → Incidents and in each service's detail dialog, kept for 90 days.
 - **Alert muting**: mute down/recovery alerts per service (works for Docker-managed services too); monitoring continues and a bell-off icon marks the tile. Included in YAML backups.
-- **Fixes**: discovery no longer resets check schedules every 30 seconds; SSRF guard now blocks IPv4-mapped IPv6 forms; credentials are not forwarded on cross-origin redirects; the ops view no longer refetches on every status event.
+- **Fixes**: deleting a service no longer risks a crash when its buffered check results are written; discovery no longer resets check schedules every 30 seconds; SSRF guard now blocks IPv4-mapped IPv6 forms; credentials are not forwarded on cross-origin redirects; the ops view no longer refetches on every status event.
 
 ## 0.1.0 (2026-10-05)
 

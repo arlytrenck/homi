@@ -4,14 +4,16 @@ import { getDb } from "@/server/db/client";
 import { services, checks } from "@/server/db/schema";
 import { ServicePatch } from "@/lib/schemas";
 import { changed, upsertCheck } from "@/server/data";
+import { assertValidUpstream } from "@/server/dependencies-guard";
 import { isDockerManaged } from "@/server/discovery/sync";
 export const dynamic = "force-dynamic";
 export const PATCH = route({ auth: "admin", body: ServicePatch }, ({ body, params }) => {
   const db = getDb();
   if (isDockerManaged(db, params.id)) {
-    const owned = Object.keys(body).filter((k) => k !== "groupId" && k !== "alertsMuted");
-    if (owned.length) throw new ApiError(409, "managed_by_docker", "This service is managed by Docker labels. Change the container's homi.* labels instead; only its group and alert muting can be edited here.");
+    const owned = Object.keys(body).filter((k) => k !== "groupId" && k !== "alertsMuted" && k !== "dependsOnId");
+    if (owned.length) throw new ApiError(409, "managed_by_docker", "This service is managed by Docker labels. Change the container's homi.* labels instead; only its group, alert muting and upstream service can be edited here.");
   }
+  assertValidUpstream(db, params.id, body.dependsOnId);
   const { check, ...rest } = body;
   const set: Record<string, unknown> = { updatedAt: Date.now() };
   for (const [k, v] of Object.entries(rest)) if (v !== undefined) set[k] = v;

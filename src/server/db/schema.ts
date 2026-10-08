@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, index, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 const id = () => text("id").primaryKey();
 const ts = (n: string) => integer(n).notNull();
@@ -50,6 +50,8 @@ export const services = sqliteTable("services", {
   missingSince: integer("missing_since"),
   hiddenPublic: integer("hidden_public", { mode: "boolean" }).notNull().default(false),
   alertsMuted: integer("alerts_muted", { mode: "boolean" }).notNull().default(false),
+  /** the service this one runs on or needs; when that is down, this one is "affected" and does not alert on its own */
+  dependsOnId: text("depends_on_id").references((): AnySQLiteColumn => services.id, { onDelete: "set null" }),
   createdAt: ts("created_at"),
   updatedAt: ts("updated_at"),
 });
@@ -171,4 +173,20 @@ export const maintenanceWindows = sqliteTable(
     createdAt: ts("created_at"),
   },
   (t) => [index("maintenance_ends").on(t.endsAt)],
+);
+
+/** One row per outage of a monitored service: opened when its check goes down, closed when it leaves down. */
+export const incidents = sqliteTable(
+  "incidents",
+  {
+    id: id(),
+    checkId: text("check_id").notNull().references(() => checks.id, { onDelete: "cascade" }),
+    serviceName: text("service_name").notNull(),
+    startedAt: ts("started_at"),
+    endedAt: integer("ended_at"),
+    error: text("error"),
+    /** name of the upstream service that was already down, if any */
+    affectedBy: text("affected_by"),
+  },
+  (t) => [index("incidents_started").on(t.startedAt), index("incidents_check").on(t.checkId, t.startedAt)],
 );

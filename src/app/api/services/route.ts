@@ -4,10 +4,12 @@ import { services } from "@/server/db/schema";
 import { ServiceInput } from "@/lib/schemas";
 import { newId } from "@/server/auth/session";
 import { changed, nextSort, upsertCheck } from "@/server/data";
+import { assertValidUpstream } from "@/server/dependencies-guard";
 export const dynamic = "force-dynamic";
 export const POST = route({ auth: "admin", body: ServiceInput }, ({ body }) => {
+  assertValidUpstream(getDb(), null, body.dependsOnId);
   const id = newId(), now = Date.now();
-  getDb().insert(services).values({ id, groupId: body.groupId ?? null, name: body.name, description: body.description ?? null, url: body.url, icon: body.icon ?? null, sort: nextSort(services), targetBlank: body.targetBlank, tags: body.tags, hiddenPublic: body.hiddenPublic, alertsMuted: body.alertsMuted, createdAt: now, updatedAt: now }).run();
+  getDb().insert(services).values({ id, groupId: body.groupId ?? null, name: body.name, description: body.description ?? null, url: body.url, icon: body.icon ?? null, sort: nextSort(services), targetBlank: body.targetBlank, tags: body.tags, hiddenPublic: body.hiddenPublic, alertsMuted: body.alertsMuted, dependsOnId: body.dependsOnId ?? null, createdAt: now, updatedAt: now }).run();
   if (body.check) upsertCheck(id, body.name, body.check);
   changed();
   return { id };
