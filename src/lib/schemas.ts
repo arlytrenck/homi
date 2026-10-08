@@ -109,3 +109,15 @@ const widgetShape = {
 export const WidgetInput = z.object({ ...widgetShape, options: widgetShape.options.default({}), area: widgetShape.area.default("main"), size: widgetShape.size.default("md"), hiddenPublic: widgetShape.hiddenPublic.default(true) });
 export const WidgetPatch = z.object(widgetShape).omit({ kind: true, integrationId: true }).partial();
 export type WidgetInput = z.infer<typeof WidgetInput>;
+
+export const MaintenanceInput = z.object({
+  name: z.string().trim().max(100).optional(),
+  kind: z.enum(["all", "group", "service"]),
+  targetId: z.string().max(40).optional(),
+  /** epoch ms; omitted = now */
+  startsAt: z.number().int().positive().optional(),
+  endsAt: z.number().int().positive().optional(),
+  /** alternative to endsAt, counted from the start */
+  minutes: z.number().int().min(1).max(60 * 24 * 30).optional(),
+}).refine((v) => v.kind === "all" || !!v.targetId, { message: "Pick a service or group", path: ["targetId"] })
+  .refine((v) => (v.endsAt !== undefined) !== (v.minutes !== undefined), { message: "Give either an end time or a duration", path: ["minutes"] });

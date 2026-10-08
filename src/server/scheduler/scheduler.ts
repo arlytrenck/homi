@@ -6,6 +6,7 @@ import { runCheck, type CheckOutcome } from "@/server/checks/runner";
 import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
 import { classify, digestTick, notifyTransition } from "@/server/notify/notify";
+import { activeWindows, inMaintenance, maintenanceTick } from "@/server/maintenance";
 
 type Check = typeof checks.$inferSelect;
 const HOUR = 3600_000;
@@ -68,7 +69,7 @@ export class Scheduler {
       }
       if ((this.next.get(c.id) ?? 0) <= now && !this.running.has(c.id) && this.active < MAX_CONCURRENCY) void this.exec(c);
     }
-    if (now - this.lastDigest > 30_000) { this.lastDigest = now; void digestTick(this.db, now).catch((e) => console.error("[homi] digest failed", e)); }
+    if (now - this.lastDigest > 30_000) { this.lastDigest = now; void digestTick(this.db, now).catch((e) => console.error("[homi] digest failed", e)); void maintenanceTick(this.db, now).catch((e) => console.error("[homi] maintenance follow-up failed", e)); }
     if (now - this.lastMaint > 10 * 60_000) { this.lastMaint = now; this.maintenance(now); }
   }
 
@@ -100,7 +101,8 @@ export class Scheduler {
     }).where(eq(checks.id, checkId)).run();
     const kind = classify(c.lastStatus, n.status);
     const svc = kind && c.serviceId ? this.db.select({ muted: services.alertsMuted, groupId: services.groupId, tags: services.tags }).from(services).where(eq(services.id, c.serviceId)).get() : undefined;
-    if (kind && !svc?.muted) void notifyTransition(this.db, { kind, groupId: svc?.groupId, tags: svc?.tags, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
+    const paused = kind && svc && inMaintenance(activeWindows(this.db, now), { id: c.serviceId!, groupId: svc.groupId });
+    if (kind && !svc?.muted && !paused) void notifyTransition(this.db, { kind, groupId: svc?.groupId, tags: svc?.tags, name: c.name, status: n.status, previous: c.lastStatus, target: c.target, error: o.error, downForMs: kind === "recovered" && c.lastChangeAt ? now - c.lastChangeAt : undefined, ts: now });
     this.buffer.push({ checkId, ts: now, o });
     publish({ type: "status", checkId, status: n.status, latencyMs: o.latencyMs, ts: now });
   }

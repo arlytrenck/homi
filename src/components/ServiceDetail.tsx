@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Wrench, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import type { ServiceDTO } from "@/lib/types";
 import { StatusDot } from "./StatusDot";
+import { useViewer } from "./Providers";
 
 const RANGES = ["24h", "7d", "30d", "90d"] as const;
 type Range = (typeof RANGES)[number];
@@ -38,6 +39,10 @@ export function ServiceDetail({ service, onClose }: { service: ServiceDTO; onClo
   const ref = useRef<HTMLDialogElement>(null);
   const [range, setRange] = useState<Range>("24h");
   const st = service.status!;
+  const qc = useQueryClient();
+  const admin = useViewer() === "admin";
+  const [pauseNote, setPauseNote] = useState("");
+  const pause = async (minutes: number) => { try { await api("/api/maintenance", { method: "POST", body: { kind: "service", targetId: service.id, minutes } }); qc.invalidateQueries({ queryKey: ["dashboard"] }); setPauseNote("Alerts held"); } catch { setPauseNote("Failed"); } };
   useEffect(() => { ref.current?.showModal(); }, []);
   const { data, isLoading } = useQuery({ queryKey: ["hist-detail", st.id, range], queryFn: () => api<Hist>(`/api/checks/${st.id}/history?range=${range}`), refetchInterval: 60_000 });
   const stats = useMemo(() => {
@@ -68,6 +73,13 @@ export function ServiceDetail({ service, onClose }: { service: ServiceDTO; onClo
           <div>
             <h3 className="mb-1 text-xs font-medium text-muted">Recent errors</h3>
             <ul className="max-h-32 space-y-0.5 overflow-y-auto text-xs">{[...data.errors].reverse().map((e, i) => <li key={i} className="flex gap-2"><span className="shrink-0 tabular-nums text-muted">{new Date(e.ts).toLocaleString()}</span><span className="truncate">{e.error}</span></li>)}</ul>
+          </div>
+        )}
+        {admin && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
+            <span className="flex items-center gap-1.5 text-muted"><Wrench size={14} aria-hidden /> Hold alerts for</span>
+            {[["1 h", 60], ["4 h", 240], ["1 day", 1440]].map(([l, m]) => <button key={l} className="btn !min-h-8 !px-3 text-xs" onClick={() => pause(m as number)} disabled={service.maintenance}>{l}</button>)}
+            <span className="text-xs text-muted" role="status">{service.maintenance ? "In maintenance (manage in Settings)" : pauseNote}</span>
           </div>
         )}
         <p className="truncate text-xs text-muted">{st.type ? `${st.type.toUpperCase()} · ${st.target}` : service.url}</p>

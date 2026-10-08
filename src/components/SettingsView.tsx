@@ -7,6 +7,7 @@ import { api, ApiClientError } from "@/lib/api-client";
 import { IntegrationsPanel } from "./IntegrationsPanel";
 import { DiscoveryPanel } from "./DiscoveryPanel";
 import { NotificationsPanel } from "./NotificationsPanel";
+import { MaintenancePanel } from "./MaintenancePanel";
 
 interface S { title: string; theme: string; publicView: boolean; allowLoopback: boolean; retentionHours: number }
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
@@ -73,7 +74,7 @@ export function SettingsView() {
   return (
     <main className="mx-auto max-w-3xl space-y-5 px-4 py-6">
       <div className="flex items-center gap-3"><Link href="/" className="btn" aria-label="Back to dashboard"><ArrowLeft size={16} /></Link><h1 className="text-xl font-semibold">Settings</h1></div>
-      <General /><NotificationsPanel /><IntegrationsPanel /><DiscoveryPanel /><Security /><Backup />
+      <General /><NotificationsPanel /><MaintenancePanel /><IntegrationsPanel /><DiscoveryPanel /><Security /><Backup />
     </main>
   );
 }

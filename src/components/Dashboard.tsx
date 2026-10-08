@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Activity, BellOff, ChartLine, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
+import { Activity, BellOff, ChartLine, Wrench, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useLiveDashboard } from "@/lib/live";
 import type { DashboardDTO, GroupDTO, ServiceDTO, WidgetDTO } from "@/lib/types";
@@ -40,13 +40,14 @@ function Tile({ s, edit, onEdit, onDelete, onDetail }: { s: ServiceDTO; edit: bo
         <span className="block truncate font-medium" style={{ fontSize: "var(--text-tile)" }}>{s.name}</span>
         {(s.description || s.missing) && <span className="block truncate text-xs text-muted">{s.missing ? "Container not running" : s.description}</span>}
       </span>
+      {s.maintenance && <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-1.5 py-0.5 text-[11px] text-warn-fg"><Wrench size={11} aria-hidden />Maintenance</span>}
       {s.alertsMuted && <BellOff size={13} className="shrink-0 text-muted" aria-label="Alerts muted" />}
       {s.source === "docker" && <Container size={13} className="shrink-0 text-muted" aria-label="Managed by Docker labels" />}
       {st?.latencyMs != null && st.status !== "down" && <span className="shrink-0 text-xs tabular-nums text-muted">{st.latencyMs} ms</span>}
       {st && <StatusDot status={st.status} title={tip} />}
     </>
   );
-  const tone = st?.status === "down" ? "border-down/60 bg-down/10" : st?.status === "degraded" ? "border-warn/50" : "";
+  const tone = s.maintenance ? "border-warn/40" : st?.status === "down" ? "border-down/60 bg-down/10" : st?.status === "degraded" ? "border-warn/50" : "";
   const cls = `card flex min-h-14 items-center gap-3 transition-colors hover:border-accent ${tone}`;
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }} className="relative list-none">
@@ -73,7 +74,7 @@ function Section({ group, services, edit, folded, onFold, onAdd, onEdit, onDelet
   const id = group?.id ?? UNGROUPED;
   const { setNodeRef } = useDroppable({ id });
   if (!group && !services.length && !edit) return null;
-  const down = services.filter((s) => s.status?.status === "down").length;
+  const down = services.filter((s) => s.status?.status === "down" && !s.maintenance).length;
   return (
     <section aria-labelledby={`g-${id}`} className="mb-10">
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -121,13 +122,13 @@ export function Dashboard() {
   }, []);
 
   const needle = q.trim().toLowerCase();
-  const filtered = useMemo(() => (data?.services ?? []).filter((s) => (!onlyBad || s.status?.status === "down" || s.status?.status === "degraded") && (!needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle)))), [data, needle, onlyBad]);
+  const filtered = useMemo(() => (data?.services ?? []).filter((s) => (!onlyBad || (!s.maintenance && (s.status?.status === "down" || s.status?.status === "degraded"))) && (!needle || [s.name, s.description ?? "", s.url, ...s.tags].some((t) => t.toLowerCase().includes(needle)))), [data, needle, onlyBad]);
 
   if (!data) return isError
     ? <div className="grid min-h-dvh place-items-center"><div className="card p-6 text-center" role="alert"><p className="font-medium">Couldn’t load the dashboard</p><button className="btn btn-primary mt-3" onClick={() => refetch()}>Retry</button></div></div>
     : <div className="grid min-h-dvh place-items-center text-muted" role="status">Loading…</div>;
   const groups = data.groups;
-  const mon = data.services.filter((s) => s.status);
+  const mon = data.services.filter((s) => s.status && !s.maintenance);
   const bad = mon.filter((s) => s.status!.status === "down" || s.status!.status === "degraded").length;
   const summary = mon.length ? { bad: bad > 0, text: bad ? `${bad} of ${mon.length} services need attention` : `All ${mon.length} services up` } : null;
   const by = (gid: string | null) => filtered.filter((s) => (s.groupId ?? null) === gid);

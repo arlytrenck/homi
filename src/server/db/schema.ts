@@ -155,3 +155,20 @@ export const auditLog = sqliteTable("audit_log", {
   action: text("action").notNull(),
   detail: text("detail", { mode: "json" }),
 });
+
+/** Planned work: alerts for the covered services are held (checks keep running) between startsAt and endsAt. */
+export const maintenanceWindows = sqliteTable(
+  "maintenance_windows",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    kind: text("kind", { enum: ["all", "group", "service"] }).notNull(),
+    targetId: text("target_id"),
+    startsAt: ts("starts_at"),
+    endsAt: ts("ends_at"),
+    /** set once the "still down after maintenance" follow-up has been considered */
+    endHandled: integer("end_handled", { mode: "boolean" }).notNull().default(false),
+    createdAt: ts("created_at"),
+  },
+  (t) => [index("maintenance_ends").on(t.endsAt)],
+);
