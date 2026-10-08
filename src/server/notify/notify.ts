@@ -7,23 +7,29 @@ import { safeFetch } from "@/server/net/safeFetch";
 
 export type NotifyKind = "webhook" | "ntfy";
 /** Stored form: the URL usually embeds a secret (ntfy topic, Discord/Slack token), so it is sealed. */
-export interface StoredNotify { enabled: boolean; kind: NotifyKind; urlSealed: string | null; onRecovery: boolean }
+export interface Destination { id: string; kind: NotifyKind; urlSealed: string | null; enabled: boolean; onRecovery: boolean }
 export interface NotifyEvent { kind: "down" | "recovered"; name: string; status: string; previous: string; target?: string; error?: string; downForMs?: number; ts: number }
+export interface DeliveryResult { ts: number; ok: boolean; error?: string }
 
 const AAD = "notifications:url";
 const KEY = "notifications";
-const g = globalThis as unknown as { __homiNotify?: { ts: number; ok: boolean; error?: string } };
+const g = globalThis as unknown as { __homiNotify?: Record<string, DeliveryResult> };
 
-export const lastNotify = () => g.__homiNotify ?? null;
+export const lastResults = (): Record<string, DeliveryResult> => g.__homiNotify ?? {};
 export const sealUrl = (url: string) => encryptSecrets({ url }, AAD);
-const openUrl = (sealed: string) => decryptSecrets<{ url: string }>(sealed, AAD).url;
+export const openUrl = (sealed: string) => decryptSecrets<{ url: string }>(sealed, AAD).url;
 
-export function readStored(db: Db): StoredNotify | null {
+/** Reads destinations; a pre-multi-destination setting (one object) becomes a single destination. */
+export function readDestinations(db: Db): Destination[] {
   const row = db.select().from(settings).where(eq(settings.key, KEY)).get();
-  return row ? (row.value as StoredNotify) : null;
+  const v = row?.value as { destinations?: Destination[]; kind?: NotifyKind; urlSealed?: string | null; enabled?: boolean; onRecovery?: boolean } | undefined;
+  if (!v) return [];
+  if (Array.isArray(v.destinations)) return v.destinations;
+  return v.kind ? [{ id: "d1", kind: v.kind, urlSealed: v.urlSealed ?? null, enabled: !!v.enabled, onRecovery: v.onRecovery ?? true }] : [];
 }
-export function writeStored(db: Db, v: StoredNotify) {
-  db.insert(settings).values({ key: KEY, value: v as any }).onConflictDoUpdate({ target: settings.key, set: { value: v as any } }).run();
+export function writeDestinations(db: Db, destinations: Destination[]) {
+  const value = { destinations } as any;
+  db.insert(settings).values({ key: KEY, value }).onConflictDoUpdate({ target: settings.key, set: { value } }).run();
 }
 
 const fmtDur = (ms: number) => { const m = Math.round(ms / 60_000); return m < 1 ? "under a minute" : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
@@ -42,18 +48,18 @@ export async function deliver(kind: NotifyKind, url: string, e: NotifyEvent): Pr
   if (r.status < 200 || r.status >= 300) throw new Error(`Receiver answered ${r.status}`);
 }
 
-/** Fire-and-forget: never throws, records the outcome for the Settings page. */
+/** Fire-and-forget: never throws; each destination is independent and its outcome is recorded for the Settings page. */
 export async function notifyTransition(db: Db, e: NotifyEvent): Promise<void> {
-  try {
-    const cfg = readStored(db);
-    if (!cfg?.enabled || !cfg.urlSealed) return;
-    if (e.kind === "recovered" && !cfg.onRecovery) return;
-    await deliver(cfg.kind, openUrl(cfg.urlSealed), e);
-    g.__homiNotify = { ts: Date.now(), ok: true };
-  } catch (err) {
-    g.__homiNotify = { ts: Date.now(), ok: false, error: err instanceof Error ? err.message : String(err) };
-    console.error("[homi] notification failed:", g.__homiNotify.error);
-  }
+  let dests: Destination[];
+  try { dests = readDestinations(db).filter((d) => d.enabled && d.urlSealed && (e.kind === "down" || d.onRecovery)); } catch { return; }
+  await Promise.all(dests.map(async (d) => {
+    try { await deliver(d.kind, openUrl(d.urlSealed!), e); (g.__homiNotify ??= {})[d.id] = { ts: Date.now(), ok: true }; }
+    catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      (g.__homiNotify ??= {})[d.id] = { ts: Date.now(), ok: false, error };
+      console.error(`[homi] notification to ${d.kind} destination failed:`, error);
+    }
+  }));
 }
 
 /** Which transitions are worth a message: reaching down, or leaving down. Unknown → anything is startup noise. */

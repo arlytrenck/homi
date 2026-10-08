@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { classify, deliver, describe as describeEvent } from "./notify";
+import { classify, deliver, describe as describeEvent, notifyTransition, readDestinations, sealUrl, writeDestinations } from "./notify";
+import { openDb, runMigrations } from "@/server/db/client";
+import { settings } from "@/server/db/schema";
+import path from "node:path";
+import crypto from "node:crypto";
+import { resetMasterKeyForTests } from "@/server/crypto/secretbox";
 
 describe("classify", () => {
   it.each([["up", "down", "down"], ["degraded", "down", "down"], ["down", "up", "recovered"], ["down", "degraded", "recovered"], ["up", "degraded", null], ["unknown", "down", null], ["unknown", "up", null], ["down", "down", null]])("%s → %s = %s", (a, b, want) => {
@@ -37,7 +42,35 @@ describe("deliver", () => {
   it("rejects non-2xx", async () => {
     await expect(deliver("webhook", `${url}/fail`, ev)).rejects.toThrow(/500/);
   });
+  it("fans out to every enabled destination; one failing does not block the others", async () => {
+    process.env.HOMI_MIGRATIONS = path.resolve("drizzle");
+    resetMasterKeyForTests(crypto.randomBytes(32));
+    const db = openDb(":memory:").db; runMigrations(db);
+    writeDestinations(db, [
+      { id: "a", kind: "webhook", urlSealed: sealUrl(`${url}/fail`), enabled: true, onRecovery: true },
+      { id: "b", kind: "ntfy", urlSealed: sealUrl(`${url}/topic`), enabled: true, onRecovery: true },
+      { id: "c", kind: "webhook", urlSealed: sealUrl(`${url}/off`), enabled: false, onRecovery: true },
+    ]);
+    const before = got.length;
+    await notifyTransition(db, ev);
+    expect(got.length - before).toBe(2);
+  });
   it("describes recovery with downtime", () => {
     expect(describeEvent({ ...ev, kind: "recovered", status: "up", downForMs: 7 * 60_000 }).text).toBe("Plex is back up after 7 min");
+  });
+});
+
+describe("destinations storage", () => {
+  process.env.HOMI_MIGRATIONS = path.resolve("drizzle");
+  it("upgrades the legacy single-destination setting", () => {
+    const db = openDb(":memory:").db; runMigrations(db);
+    db.insert(settings).values({ key: "notifications", value: { enabled: true, kind: "ntfy", urlSealed: "x", onRecovery: false } as any }).run();
+    expect(readDestinations(db)).toEqual([{ id: "d1", kind: "ntfy", urlSealed: "x", enabled: true, onRecovery: false }]);
+  });
+  it("round-trips several destinations", () => {
+    const db = openDb(":memory:").db; runMigrations(db);
+    const d = [{ id: "a", kind: "webhook" as const, urlSealed: "1", enabled: true, onRecovery: true }, { id: "b", kind: "ntfy" as const, urlSealed: "2", enabled: false, onRecovery: true }];
+    writeDestinations(db, d);
+    expect(readDestinations(db)).toEqual(d);
   });
 });

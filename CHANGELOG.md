@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Alerts**: webhook (Discord, Slack, Home Assistant, any JSON receiver) or ntfy notification when a service goes down and when it recovers. Configure under Settings → Alerts; the URL is stored encrypted.
+- **Alerts**: up to five destinations, each a webhook (Discord, Slack, Home Assistant, any JSON receiver) or ntfy, notified when a service goes down and when it recovers. Configure under Settings → Alerts; the URL is stored encrypted.
 - **Service details**: per-service uptime and latency charts (24h to 90d) from the dashboard.
 - **Checks**: choose GET or HEAD for HTTP checks.
 - **Alert muting**: mute down/recovery alerts per service (works for Docker-managed services too); monitoring continues and a bell-off icon marks the tile. Included in YAML backups.

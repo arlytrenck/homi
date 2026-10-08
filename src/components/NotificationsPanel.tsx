@@ -1,44 +1,61 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 
-interface N { enabled: boolean; kind: "webhook" | "ntfy"; urlSet: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
+type Kind = "webhook" | "ntfy";
+interface Dest { id: string; kind: Kind; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: { ts: number; ok: boolean; error?: string } | null }
+interface Row { id?: string; kind: Kind; url: string; urlSet: boolean; enabled: boolean; onRecovery: boolean; last: Dest["last"]; note?: string }
+const MAX = 5;
+const blank = (): Row => ({ kind: "webhook", url: "", urlSet: false, enabled: true, onRecovery: true, last: null });
 const msg = (x: unknown) => (x instanceof ApiClientError ? x.message : "Failed");
 
 export function NotificationsPanel() {
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["notifications"], queryFn: () => api<N>("/api/notifications") });
+  const { data } = useQuery({ queryKey: ["notifications"], queryFn: () => api<{ destinations: Dest[] }>("/api/notifications") });
+  const [rows, setRows] = useState<Row[] | null>(null);
   const [note, setNote] = useState("");
-  if (!data) return null;
-  const read = (form: HTMLFormElement) => {
-    const f = new FormData(form);
-    return { enabled: f.get("enabled") === "on", kind: String(f.get("kind")) as N["kind"], url: String(f.get("url") || "") || undefined, onRecovery: f.get("onRecovery") === "on" };
-  };
+  useEffect(() => { if (data) setRows(data.destinations.length ? data.destinations.map((d) => ({ ...d, url: "" })) : [blank()]); }, [data]);
+  if (!rows) return null;
+  const set = (i: number, patch: Partial<Row>) => setRows((r) => r!.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const many = rows.length > 1;
+
   return (
     <section className="card space-y-3 p-5" aria-labelledby="h-notify">
       <h2 id="h-notify" className="font-semibold">Alerts</h2>
-      <p className="text-sm text-muted">Get a message when a service goes down, and when it comes back. The URL is stored encrypted.</p>
-      <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (e) => {
+      <p className="text-sm text-muted">Get a message when a service goes down, and when it comes back. Add up to {MAX} destinations. URLs are stored encrypted.</p>
+      <form className="space-y-3" onSubmit={async (e) => {
         e.preventDefault(); setNote("");
-        try { await api("/api/notifications", { method: "PUT", body: read(e.currentTarget) }); qc.invalidateQueries({ queryKey: ["notifications"] }); setNote("Saved"); } catch (x) { setNote(msg(x)); }
+        const destinations = rows.filter((r) => r.url || r.urlSet).map((r) => ({ id: r.id, kind: r.kind, url: r.url || undefined, enabled: r.enabled, onRecovery: r.onRecovery }));
+        try { await api("/api/notifications", { method: "PUT", body: { destinations } }); await qc.invalidateQueries({ queryKey: ["notifications"] }); setNote("Saved"); } catch (x) { setNote(msg(x)); }
       }}>
-        <div><label className="label" htmlFor="n-kind">Type</label>
-          <select id="n-kind" name="kind" className="input" defaultValue={data.kind}><option value="webhook">Webhook (JSON: Discord, Slack, Home Assistant…)</option><option value="ntfy">ntfy</option></select></div>
-        <div><label className="label" htmlFor="n-url">URL {data.urlSet && <span className="text-muted">(saved — leave blank to keep)</span>}</label>
-          <input id="n-url" name="url" type="url" className="input" placeholder={data.urlSet ? "••••••••" : "https://"} autoComplete="off" /></div>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" defaultChecked={data.enabled} /> Send alerts</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="onRecovery" defaultChecked={data.onRecovery} /> Also notify on recovery</label>
-        <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+        {rows.map((r, i) => (
+          <fieldset key={r.id ?? `new-${i}`} className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-2">
+            <legend className="px-1 text-xs text-muted">Destination {i + 1}</legend>
+            <div><label className="label" htmlFor={`n-kind-${i}`}>Type</label>
+              <select id={`n-kind-${i}`} className="input" value={r.kind} onChange={(e) => set(i, { kind: e.target.value as Kind })}><option value="webhook">Webhook (JSON: Discord, Slack, Home Assistant…)</option><option value="ntfy">ntfy</option></select></div>
+            <div><label className="label" htmlFor={`n-url-${i}`}>URL {r.urlSet && <span className="text-muted">(saved — leave blank to keep)</span>}</label>
+              <input id={`n-url-${i}`} type="url" className="input" placeholder={r.urlSet ? "••••••••" : "https://"} autoComplete="off" value={r.url} onChange={(e) => set(i, { url: e.target.value })} /></div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.enabled} onChange={(e) => set(i, { enabled: e.target.checked })} /> Send alerts</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.onRecovery} onChange={(e) => set(i, { onRecovery: e.target.checked })} /> Also notify on recovery</label>
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+              <button type="button" className="btn" onClick={async () => {
+                set(i, { note: "Sending…" });
+                try { const t = await api<{ ok: boolean; error?: string }>("/api/notifications/test", { method: "POST", body: { id: r.id, kind: r.kind, url: r.url || undefined } }); set(i, { note: t.ok ? "Test sent" : `Failed: ${t.error}` }); } catch (x) { set(i, { note: msg(x) }); }
+              }}>Send test</button>
+              {many && <button type="button" className="btn btn-danger" aria-label={`Remove destination ${i + 1}`} onClick={() => setRows(rows.filter((_, j) => j !== i))}><Trash2 size={14} /></button>}
+              <span className="text-sm text-muted" role="status">{r.note}</span>
+            </div>
+            {r.last && !r.last.ok && <p className="text-sm text-down-fg sm:col-span-2" role="alert">Last alert failed ({new Date(r.last.ts).toLocaleString()}): {r.last.error}</p>}
+          </fieldset>
+        ))}
+        <div className="flex flex-wrap items-center gap-2">
           <button className="btn btn-primary">Save</button>
-          <button type="button" className="btn" onClick={async (e) => {
-            const { kind, url } = read(e.currentTarget.form!); setNote("Sending…");
-            try { const r = await api<{ ok: boolean; error?: string }>("/api/notifications/test", { method: "POST", body: { kind, url } }); setNote(r.ok ? "Test sent" : `Failed: ${r.error}`); } catch (x) { setNote(msg(x)); }
-          }}>Send test</button>
+          {rows.length < MAX && <button type="button" className="btn" onClick={() => setRows([...rows, blank()])}><Plus size={14} /> Add destination</button>}
           <span className="text-sm text-muted" role="status">{note}</span>
         </div>
       </form>
-      {data.last && !data.last.ok && <p className="text-sm text-down-fg" role="alert">Last alert failed ({new Date(data.last.ts).toLocaleString()}): {data.last.error}</p>}
     </section>
   );
 }

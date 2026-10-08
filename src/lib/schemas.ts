@@ -48,14 +48,18 @@ export const SettingsInput = z.object({
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
 
+const destUrl = z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL");
 export const NotificationsInput = z.object({
-  enabled: z.boolean(),
-  kind: z.enum(["webhook", "ntfy"]),
-  /** omitted = keep the stored URL */
-  url: z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL").optional(),
-  onRecovery: z.boolean(),
+  destinations: z.array(z.object({
+    /** present = an existing destination (its URL is kept when `url` is omitted) */
+    id: z.string().max(40).optional(),
+    kind: z.enum(["webhook", "ntfy"]),
+    url: destUrl.optional(),
+    enabled: z.boolean(),
+    onRecovery: z.boolean(),
+  })).max(5),
 });
-export const NotificationsTest = z.object({ kind: z.enum(["webhook", "ntfy"]).optional(), url: NotificationsInput.shape.url });
+export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });
 
 const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
 
