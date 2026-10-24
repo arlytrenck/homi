@@ -28,7 +28,7 @@ export default defineConfig({
       timeout: 60_000,
       env: {
         NODE_ENV: "production", PORT: String(PORT), HOSTNAME: "127.0.0.1", HOMI_DATA: dataDir,
-        HOMI_ALLOW_LOOPBACK: "1", HOMI_DOCKER_HOST: `unix://${dockerSock}`, HOMI_DISCOVERY_HOST: "nas.lan",
+        HOMI_ALLOW_LOOPBACK: "1", HOMI_SETUP_OPEN: "1", HOMI_DOCKER_HOST: `unix://${dockerSock}`, HOMI_DISCOVERY_HOST: "nas.lan",
       },
     },
   ],

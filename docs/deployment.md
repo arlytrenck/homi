@@ -27,7 +27,7 @@ homi.example.com {
 }
 ```
 
-If you expose Homi publicly, set `HOMI_SETUP_TOKEN` before first start and consider leaving the public view off.
+Setup is guarded by a one-time code printed in the server log (or your own `HOMI_SETUP_TOKEN`). If you expose Homi publicly, consider leaving the public view off.
 
 ## Upgrading
 

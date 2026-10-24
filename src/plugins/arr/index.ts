@@ -39,7 +39,7 @@ export const sonarr = arr("sonarr", "Sonarr", "tv", "v3", "Missing", 8989, async
 });
 export const radarr = arr("radarr", "Radarr", "film", "v3", "Missing", 7878, async (ctx) => {
   const c = await get<any[]>(ctx, "v3", `/calendar?${soon(30)}`);
-  return c[0]?.title;
+  return [...c].sort((x, y) => String(x.digitalRelease ?? x.physicalRelease ?? x.inCinemas ?? "").localeCompare(String(y.digitalRelease ?? y.physicalRelease ?? y.inCinemas ?? "")))[0]?.title;
 });
 export const lidarr = arr("lidarr", "Lidarr", "music", "v1", "Missing", 8686);
 export const prowlarr = arr("prowlarr", "Prowlarr", "search", "v1", "", 9696);

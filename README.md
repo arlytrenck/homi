@@ -35,7 +35,8 @@ Open <http://localhost:3000> and create the admin account. Data lives in `./data
 |---|---|
 | `HOMI_DATA` | Data directory (default `/data` in the image) |
 | `HOMI_SECRET_KEY` / `HOMI_SECRET_KEY_FILE` | 32-byte base64 key for secrets at rest. Generated into the data directory if unset |
-| `HOMI_SETUP_TOKEN` | Require this token on first-run setup (use when exposed beyond your LAN) |
+| `HOMI_SETUP_TOKEN` | Token required on first-run setup. Unset: a one-time code is printed in the server log |
+| `HOMI_SETUP_OPEN` | `1` = no setup code (open first-run setup) |
 | `HOMI_PUBLIC_URL` | External URL; used for the CSRF origin check behind a proxy |
 | `HOMI_TRUST_PROXY=1` | Trust `X-Forwarded-For/Proto` (set only behind your own reverse proxy) |
 | `HOMI_DOCKER_HOST`, `HOMI_DISCOVERY_HOST`, `HOMI_DISCOVERY=off` | Docker auto-discovery (see [docker-labels.md](docs/docker-labels.md)); off unless a socket is mounted or the host is set |
