@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { route } from "@/server/api";
 import { getDb } from "@/server/db/client";
 import { checks, incidents, services } from "@/server/db/schema";

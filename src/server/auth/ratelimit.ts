@@ -17,3 +17,13 @@ export function recordFailure(key: string, now = Date.now()) {
 }
 export function recordSuccess(key: string) { buckets.delete(key); }
 export function resetLimits() { buckets.clear(); }
+
+/**
+ * Buckets a login attempt counts against. Without a trusted client IP (`ip` null) every visitor would
+ * share one bucket, so a stranger could lock the admin out: fall back to per-username only. With an IP,
+ * a failing client is limited on its own (by IP, and by IP+username) and cannot lock out the real user from elsewhere.
+ */
+export function loginKeys(ip: string | null, username: string): string[] {
+  const u = username.toLowerCase();
+  return ip ? [`ip:${ip}`, `pair:${ip}|${u}`] : [`user:${u}`];
+}

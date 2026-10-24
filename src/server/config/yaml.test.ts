@@ -37,6 +37,19 @@ describe("yaml import/export", () => {
     expect(again).toMatchObject({ groupsCreated: 0, servicesCreated: 0, servicesUpdated: 2 });
     expect(mod.exportYaml()).toBe(out);
   });
+  it("round-trips service dependencies by name, even through replace", () => {
+    const doc = `version: 1\nungrouped:\n  - { name: Router, url: "http://10.0.0.1" }\n  - { name: NAS, url: "http://10.0.0.2", dependsOn: Router }\n`;
+    mod.importYaml(doc, { mode: "merge", dryRun: false });
+    const out = mod.exportYaml();
+    expect(out).toContain("dependsOn: Router");
+    mod.importYaml(out, { mode: "replace", dryRun: false });
+    expect(mod.exportYaml()).toBe(out);
+  });
+  it("skips unknown or looping dependencies instead of failing", () => {
+    const doc = `version: 1\nungrouped:\n  - { name: A, url: "http://a", dependsOn: B }\n  - { name: B, url: "http://b", dependsOn: A }\n  - { name: C, url: "http://c", dependsOn: Nope }\n`;
+    const r = mod.importYaml(doc, { mode: "replace", dryRun: false });
+    expect(r.skipped).toHaveLength(2);
+  });
   it("rejects invalid documents", () => {
     expect(() => mod.importYaml("version: 2", { mode: "merge", dryRun: true })).toThrow();
   });
