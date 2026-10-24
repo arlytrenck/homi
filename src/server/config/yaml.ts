@@ -10,8 +10,10 @@ import { describeRecurrence } from "@/server/schedule";
 import { openUrl, readDestinations, sealUrl, writeDestinations, UNGROUPED, type Destination } from "@/server/notify/notify";
 import { newId } from "@/server/auth/session";
 import { nextSort, upsertCheck } from "@/server/data";
+import { wouldCycle } from "@/server/dependencies";
 
-const YService = ServiceInput.omit({ groupId: true });
+/** Dependencies travel by upstream service name: ids do not survive a restore. */
+const YService = ServiceInput.omit({ groupId: true, dependsOnId: true }).extend({ dependsOn: z.string().trim().min(1).max(100).optional() });
 /** Alert destinations are exported without their URL: it is a secret (webhook token, ntfy topic). */
 const YDest = z.object({
   kind: z.enum(["webhook", "ntfy"]),
@@ -50,15 +52,15 @@ const checkOut = (c: typeof checks.$inferSelect | undefined) =>
 export function exportYaml(): string {
   const db = getDb();
   const cs = new Map(db.select().from(checks).all().map((c) => [c.serviceId, c]));
+  const sname = new Map(db.select().from(services).all().map((x) => [x.id, x.name]));
   const svcs = db.select().from(services).where(eq(services.source, "manual")).orderBy(asc(services.sort)).all(); // docker-managed services come from labels, not backups
-  const toY = (s: typeof services.$inferSelect) => ({ name: s.name, url: s.url, description: s.description ?? undefined, icon: s.icon ?? undefined, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(s.alertsMuted && { alertsMuted: true }), check: checkOut(cs.get(s.id)) });
+  const toY = (s: typeof services.$inferSelect) => ({ name: s.name, url: s.url, description: s.description ?? undefined, icon: s.icon ?? undefined, targetBlank: s.targetBlank, tags: s.tags, hiddenPublic: s.hiddenPublic, ...(s.alertsMuted && { alertsMuted: true }), ...(s.dependsOnId && sname.get(s.dependsOnId) && { dependsOn: sname.get(s.dependsOnId) }), check: checkOut(cs.get(s.id)) });
   const doc = {
     version: 1,
     groups: db.select().from(groups).orderBy(asc(groups.sort)).all().map((g) => ({ name: g.name, icon: g.icon ?? undefined, services: svcs.filter((s) => s.groupId === g.id).map(toY) })),
     ungrouped: svcs.filter((s) => !s.groupId).map(toY),
   };
   const gname = new Map(db.select().from(groups).all().map((g) => [g.id, g.name]));
-  const sname = new Map(db.select().from(services).all().map((x) => [x.id, x.name]));
   const destinations = readDestinations(db).map((d) => ({
     kind: d.kind, enabled: d.enabled, onRecovery: d.onRecovery,
     ...none({ groups: (d.groupIds ?? []).filter((id) => id !== UNGROUPED).map((id) => gname.get(id)).filter(Boolean), ungrouped: (d.groupIds ?? []).includes(UNGROUPED), tags: d.tags ?? [] }),
@@ -83,9 +85,11 @@ export function importYaml(text: string, opts: { mode: "merge" | "replace"; dryR
     const oldS = new Map(tx.select().from(services).all().map((x) => [x.id, x.name]));
     if (opts.mode === "replace") { tx.delete(services).run(); tx.delete(groups).run(); }
     const existingGroups = new Map(tx.select().from(groups).all().map((g) => [g.name, g.id]));
+    const wanted: { name: string; groupId: string | null; upstream: string }[] = [];
     const placeService = (y: z.infer<typeof YService>, groupId: string | null) => {
       const ex = tx.select().from(services).where(eq(services.name, y.name)).all().find((s) => s.groupId === groupId);
-      const { check, ...rest } = y;
+      const { check, dependsOn, ...rest } = y;
+      if (dependsOn) wanted.push({ name: y.name, groupId, upstream: dependsOn });
       if (ex) {
         tx.update(services).set({ ...rest, description: rest.description ?? null, icon: rest.icon ?? null, updatedAt: Date.now() }).where(eq(services.id, ex.id)).run();
         if (check) upsertCheck(ex.id, y.name, CheckInput.parse(check));
@@ -103,6 +107,15 @@ export function importYaml(text: string, opts: { mode: "merge" | "replace"; dryR
       g.services.forEach((s) => placeService(s, gid!));
     }
     doc.ungrouped.forEach((s) => placeService(s, null));
+
+    // Second pass, once every service exists: wire up upstreams by name.
+    for (const w of wanted) {
+      const self = tx.select().from(services).where(eq(services.name, w.name)).all().find((s) => s.groupId === w.groupId);
+      const up = tx.select().from(services).where(eq(services.name, w.upstream)).get();
+      if (!self || !up) { res.skipped.push(`Dependency “${w.name}” → “${w.upstream}”: upstream service not found`); continue; }
+      if (wouldCycle(tx as unknown as Db, self.id, up.id)) { res.skipped.push(`Dependency “${w.name}” → “${w.upstream}” would create a loop and was skipped`); continue; }
+      tx.update(services).set({ dependsOnId: up.id }).where(eq(services.id, self.id)).run();
+    }
 
     // "Replace" recreates every group and service with new ids: re-point whatever the file does not itself redefine.
     if (opts.mode === "replace") {

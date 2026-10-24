@@ -2,7 +2,6 @@
 export interface Recurrence { days: number[]; startTime: string; durationMin: number; tz: string }
 export interface Occurrence { start: number; end: number }
 
-const DAY = 86_400_000;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const weekdayName = (d: number) => WEEKDAYS[d];
 

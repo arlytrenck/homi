@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
+import { asc, desc, eq, gte } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
 import { checkResults, checkRollups, checks, groups, incidents, services } from "@/server/db/schema";
 import { activeWindows, inMaintenance } from "@/server/maintenance";

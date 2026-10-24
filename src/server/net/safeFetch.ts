@@ -44,6 +44,14 @@ export function guardedLookup(policy: IpPolicy): net.LookupFunction {
   };
 }
 
+/** Node skips `lookup` for IP-literal hosts, so literals must be checked before connecting. */
+export function assertAllowedLiteral(host: string, policy: IpPolicy) {
+  const bare = host.replace(/^\[|\]$/g, "");
+  if (!net.isIP(bare)) return;
+  const why = blockedReason(bare, policy);
+  if (why) throw new BlockedTargetError(`Blocked target ${bare}: ${why}`);
+}
+
 export const safeFetch: SafeFetch = async (rawUrl, init = {}) => {
   const policy = init.policy ?? defaultPolicy();
   const max = init.maxBytes ?? 5 * 1024 * 1024;
@@ -58,11 +66,7 @@ export const safeFetch: SafeFetch = async (rawUrl, init = {}) => {
     if (url.protocol !== "http:" && url.protocol !== "https:") throw new BlockedTargetError("Only http(s) URLs are allowed");
     if (url.username || url.password) throw new BlockedTargetError("Credentials in URL are not allowed");
     // IP literal hosts are validated up front; hostnames are validated in the lookup.
-    const host = url.hostname.replace(/^\[|\]$/g, "");
-    if (net.isIP(host)) {
-      const why = blockedReason(host, policy);
-      if (why) throw new BlockedTargetError(`Blocked target ${host}: ${why}`);
-    }
+    assertAllowedLiteral(url.hostname, policy);
     const agent = new Agent({
       connect: { lookup: guardedLookup(policy), rejectUnauthorized: !init.ignoreTls },
     });

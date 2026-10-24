@@ -2,7 +2,7 @@
 
 ## First run
 
-Open Homi and create the admin account at `/setup`. Only one account exists; setup is closed once it is created. If Homi is reachable beyond your LAN before you finish, set `HOMI_SETUP_TOKEN` and enter it on the setup page.
+Open Homi and create the admin account at `/setup`. Only one account exists; setup is closed once it is created. Setup asks for a code: the one printed in the server log at start (`docker logs homi`), or your own `HOMI_SETUP_TOKEN`.
 
 ## Services and groups
 

@@ -2,7 +2,7 @@ import "server-only";
 import net from "node:net";
 import tls from "node:tls";
 import { execFile } from "node:child_process";
-import { defaultPolicy, guardedLookup, safeFetch } from "@/server/net/safeFetch";
+import { assertAllowedLiteral, defaultPolicy, guardedLookup, safeFetch } from "@/server/net/safeFetch";
 
 export interface CheckSpec {
   type: "http" | "tcp" | "ping" | "tls" | "heartbeat";
@@ -31,6 +31,7 @@ export function parseHostPort(target: string, defaultPort?: number): { host: str
 
 async function tcp(spec: CheckSpec): Promise<CheckOutcome> {
   const { host, port } = parseHostPort(spec.target);
+  assertAllowedLiteral(host, defaultPolicy());
   const t0 = Date.now();
   return new Promise((resolve) => {
     const s = net.connect({ host, port, timeout: spec.timeoutMs, lookup: guardedLookup(defaultPolicy()) });
@@ -54,6 +55,7 @@ export function certOutcome(validTo: string, latencyMs: number, now = Date.now()
 
 async function tlsExpiry(spec: CheckSpec): Promise<CheckOutcome> {
   const { host, port } = parseHostPort(spec.target, 443);
+  assertAllowedLiteral(host, defaultPolicy());
   const t0 = Date.now();
   return new Promise((resolve) => {
     // Expiry is the point: verify nothing else, so self-signed and private-CA certificates can be tracked too.
@@ -67,6 +69,7 @@ async function tlsExpiry(spec: CheckSpec): Promise<CheckOutcome> {
 async function ping(spec: CheckSpec): Promise<CheckOutcome> {
   const host = spec.target.trim();
   if (!HOST_RE.test(host)) return { ok: false, latencyMs: null, error: "invalid host" };
+  try { assertAllowedLiteral(host, defaultPolicy()); } catch (e) { return { ok: false, latencyMs: null, error: (e as Error).message }; }
   const t0 = Date.now();
   return new Promise((resolve) => {
     execFile("ping", ["-c", "1", "-W", String(Math.max(1, Math.ceil(spec.timeoutMs / 1000))), host], { timeout: spec.timeoutMs + 1000 }, (err, stdout) => {

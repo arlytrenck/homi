@@ -7,7 +7,7 @@ import { publish } from "@/server/events/hub";
 import { getSetting } from "@/server/settings";
 import { classify, digestTick, notifyTransition } from "@/server/notify/notify";
 import { downAncestor, descendants } from "@/server/dependencies";
-import { closeIncident, openIncident, pruneIncidents } from "@/server/incidents";
+import { closeIncident, openIncident } from "@/server/incidents";
 import { activeWindows, inMaintenance, maintenanceTick } from "@/server/maintenance";
 
 type Check = typeof checks.$inferSelect;

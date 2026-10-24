@@ -61,8 +61,11 @@ export const audit = async (actor: string, action: string, detail?: unknown) => 
   getDb().insert(auditLog).values({ ts: Date.now(), actor, action, detail: detail ?? null }).run();
 };
 
-export const clientIp = (req: NextRequest) =>
-  (process.env.HOMI_TRUST_PROXY === "1" ? req.headers.get("x-forwarded-for")?.split(",")[0].trim() : null) ?? "local";
+/** The proxy-supplied client address, or null when none is trusted. */
+export const trustedClientIp = (req: NextRequest) =>
+  (process.env.HOMI_TRUST_PROXY === "1" ? req.headers.get("x-forwarded-for")?.split(",")[0].trim() : null) || null;
+
+export const clientIp = (req: NextRequest) => trustedClientIp(req) ?? "local";
 
 export const isSecure = (req: NextRequest) =>
   req.nextUrl.protocol === "https:" || (process.env.HOMI_TRUST_PROXY === "1" && req.headers.get("x-forwarded-proto") === "https");
