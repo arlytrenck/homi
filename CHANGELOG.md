@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-24)
+
+- **Setup**: first-run setup now asks for a one-time code printed in the server log (`docker logs homi`), so nobody can claim the admin account on a freshly exposed instance. `HOMI_SETUP_TOKEN` still lets you choose your own; `HOMI_SETUP_OPEN=1` turns the requirement off.
+- **Security**: TCP, TLS and ping checks now refuse blocked IP-literal targets (loopback unless allowed, link-local and cloud-metadata addresses). Login lockouts are scoped to the client IP and IP+username, so a stranger can no longer lock the admin out. Responses carry `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff` and a `Referrer-Policy`. Public viewers no longer receive live status events for services hidden from the public view.
+- **Backups**: service dependencies are exported and imported by upstream name (`dependsOn`); unknown or looping upstreams are skipped and reported.
+- **Fixes**: saving a layout with a deleted group or service returns a clear 400 instead of a 500; the Radarr widget shows the earliest upcoming release; one malformed bookmark line no longer breaks the Bookmarks widget.
 
 - **Alerts**: up to five destinations, each a webhook (Discord, Slack, Home Assistant, any JSON receiver) or ntfy, notified when a service goes down and when it recovers. Configure under Settings → Alerts; the URL is stored encrypted.
 - **Service details**: per-service uptime and latency charts (24h to 90d) from the dashboard.

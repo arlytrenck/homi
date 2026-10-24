@@ -6,7 +6,7 @@
 
 A self-hostable homelab dashboard: a fast launcher for your services, with live health checks and uptime history. One container, one SQLite file, no external database. Built with Next.js, TypeScript and SQLite; MIT licensed.
 
-## Features (v0.1.0)
+## Features (v0.2.0)
 
 - Service launcher: groups, icons, descriptions, search (`/`), drag-and-drop ordering (touch and keyboard friendly), light/dark theme.
 - Live status: HTTP, TCP and ping checks with up / degraded / down states, SSE live updates, 24h/7d/30d/90d uptime history with hourly rollups.
