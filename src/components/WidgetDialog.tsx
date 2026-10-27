@@ -28,7 +28,7 @@ export function WidgetDialog({ widget, onClose, onSaved }: { widget: WidgetDTO |
     if (!sel) return;
     const f = new FormData(e.currentTarget);
     const options = readFields(e.currentTarget, sel.options, "o");
-    const common = { title: String(f.get("title") || "") || null, size: String(f.get("size")) as "md", hiddenPublic: f.get("hiddenPublic") !== "on", options };
+    const common = { title: String(f.get("title") || "") || null, size: String(f.get("size")) as "md", hiddenPublic: f.get("hiddenPublic") !== "on", publicDetail: f.get("publicDetail") === "full" ? "full" as const : "summary" as const, options };
     try {
       if (widget) await api(`/api/widgets/${widget.id}`, { method: "PATCH", body: { ...common, options } });
       else await api("/api/widgets", { method: "POST", body: { ...common, kind: sel.value.split("@")[0], integrationId: sel.integrationId || null } });
@@ -49,6 +49,7 @@ export function WidgetDialog({ widget, onClose, onSaved }: { widget: WidgetDTO |
           {sel && <FieldForm key={sel.value} fields={sel.options} values={widget?.options} prefix="o" />}
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="hiddenPublic" defaultChecked={widget ? !widget.hiddenPublic : false} /> Show in public view</label>
+        <div><label className="label" htmlFor="w-detail">Public detail</label><select id="w-detail" name="publicDetail" className="input" defaultValue={widget?.publicDetail ?? "summary"}><option value="summary">Summary (numbers and meters only)</option><option value="full">Full (includes rows, links and notes)</option></select></div>
         {err && <p role="alert" className="text-sm text-down-fg">{err}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={() => ref.current?.close()}>Cancel</button><button className="btn btn-primary" disabled={!sel}>Save</button></div>
       </form>

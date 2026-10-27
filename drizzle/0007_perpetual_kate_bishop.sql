@@ -1,0 +1,1 @@
+ALTER TABLE `widgets` ADD `public_detail` text DEFAULT 'full' NOT NULL;

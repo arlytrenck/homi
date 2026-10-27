@@ -131,6 +131,7 @@ export const widgets = sqliteTable("widgets", {
   sort: integer("sort").notNull().default(0),
   size: text("size", { enum: ["sm", "md", "lg"] }).notNull().default("md"),
   hiddenPublic: integer("hidden_public", { mode: "boolean" }).notNull().default(true),
+  publicDetail: text("public_detail", { enum: ["summary", "full"] }).notNull().default("full"),
 });
 
 export const notes = sqliteTable("notes", {

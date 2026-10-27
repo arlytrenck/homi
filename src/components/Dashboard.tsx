@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { DndContext, PointerSensor, KeyboardSensor, TouchSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter, useDroppable, type CollisionDetection, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, rectSortingStrategy, useSortable, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Activity, BellOff, ChartLine, Wrench, ChevronDown, Container, GripVertical, Moon, Pencil, Plus, Search, Settings, Sun, Trash2, LogOut, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
@@ -146,6 +146,15 @@ export function Dashboard() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["dashboard"] });
   const isEdit = edit && viewer === "admin";
 
+  async function onWidgetDragEnd(e: DragEndEvent) {
+    if (!data || !e.over || e.active.id === e.over.id) return;
+    const ids = data.widgets.map((w) => w.id);
+    const from = ids.indexOf(String(e.active.id)), to = ids.indexOf(String(e.over.id));
+    if (from < 0 || to < 0) return;
+    await api("/api/widgets/order", { method: "PUT", body: { ids: arrayMove(ids, from, to) } }).catch(() => {});
+    refresh();
+  }
+
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || !data) return;
@@ -207,10 +216,14 @@ export function Dashboard() {
 
       {(data.widgets.length > 0 || isEdit) && (
         <section aria-label="Widgets" className="mb-8">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onWidgetDragEnd}>
+          <SortableContext items={data.widgets.map((w) => w.id)} strategy={rectSortingStrategy}>
           <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,17rem),1fr))" }}>
             {data.widgets.map((w) => <WidgetCard key={w.id} w={w} edit={isEdit} onEdit={() => setWdialog({ widget: w })} onDelete={async () => { if (await dlg.confirm("Delete this widget?")) { await api(`/api/widgets/${w.id}`, { method: "DELETE" }); refresh(); } }} />)}
             {isEdit && <button className="card grid min-h-20 place-items-center border-dashed text-sm text-muted hover:border-accent" onClick={() => setWdialog({ widget: null })}><span className="flex items-center gap-1"><Plus size={14} /> Add widget</span></button>}
           </div>
+          </SortableContext>
+          </DndContext>
         </section>
       )}
 

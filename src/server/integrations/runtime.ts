@@ -128,3 +128,10 @@ export async function getWidgetData(widgetId: string, force = false): Promise<En
 }
 
 export const dropWidgetCache = (id: string) => wcache.delete(id);
+
+/** What a signed-out viewer may see of a widget. Summary drops rows, links and notes, which tend to carry hostnames, titles and paths. */
+export function projectPublic<T extends { stats?: unknown; meters?: unknown; rows?: unknown; note?: unknown }>(data: T, detail: "summary" | "full"): T {
+  if (detail === "full") return data;
+  const { rows: _r, note: _n, ...rest } = data;
+  return rest as T;
+}

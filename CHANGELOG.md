@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (2026-10-26)
+
+- **Widgets**: drag to reorder widgets in edit mode (mouse, touch or keyboard).
+- **Public detail**: each widget has a Public detail setting. Summary (the default for new widgets) shows signed-out viewers only numbers and meters; rows, links and notes are removed on the server. Full keeps the old behavior, and existing widgets stay on Full.
+
 ## 0.2.0 (2026-10-24)
 
 - **Setup**: first-run setup now asks for a one-time code printed in the server log (`docker logs homi`), so nobody can claim the admin account on a freshly exposed instance. `HOMI_SETUP_TOKEN` still lets you choose your own; `HOMI_SETUP_OPEN=1` turns the requirement off.

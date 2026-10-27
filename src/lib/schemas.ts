@@ -109,8 +109,9 @@ const widgetShape = {
   area: z.enum(["header", "main", "sidebar"]),
   size: z.enum(["sm", "md", "lg"]),
   hiddenPublic: z.boolean(),
+  publicDetail: z.enum(["summary", "full"]),
 };
-export const WidgetInput = z.object({ ...widgetShape, options: widgetShape.options.default({}), area: widgetShape.area.default("main"), size: widgetShape.size.default("md"), hiddenPublic: widgetShape.hiddenPublic.default(true) });
+export const WidgetInput = z.object({ ...widgetShape, options: widgetShape.options.default({}), area: widgetShape.area.default("main"), size: widgetShape.size.default("md"), hiddenPublic: widgetShape.hiddenPublic.default(true), publicDetail: widgetShape.publicDetail.default("summary") });
 export const WidgetPatch = z.object(widgetShape).omit({ kind: true, integrationId: true }).partial();
 export type WidgetInput = z.infer<typeof WidgetInput>;
 

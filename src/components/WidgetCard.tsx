@@ -1,6 +1,8 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { GripVertical, Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { api } from "@/lib/api-client";
 import type { WidgetData, WidgetDTO } from "@/lib/types";
 
@@ -9,11 +11,13 @@ const TONE_BG = { ok: "bg-ok", warn: "bg-warn", down: "bg-down", neutral: "bg-un
 
 export function WidgetCard({ w, edit, onEdit, onDelete }: { w: WidgetDTO; edit: boolean; onEdit: () => void; onDelete: () => void }) {
   const { data, isLoading } = useQuery({ queryKey: ["widget", w.id, w.options], queryFn: () => api<WidgetData>(`/api/widgets/${w.id}/data`), refetchInterval: 30_000, staleTime: 10_000 });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: w.id, disabled: !edit });
   const d = data?.data;
   const title = w.title || w.integrationName || w.kindTitle;
   return (
-    <section aria-label={title} className={`card flex flex-col gap-2 p-3 ${w.size === "lg" ? "sm:col-span-2" : ""}`}>
+    <section ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }} aria-label={title} className={`card flex flex-col gap-2 p-3 ${w.size === "lg" ? "sm:col-span-2" : ""}`}>
       <header className="flex items-center gap-2 text-xs text-muted">
+        {edit && <button {...attributes} {...listeners} className="touch-none cursor-grab text-muted" aria-label={`Drag ${title}`}><GripVertical size={14} /></button>}
         <span className="min-w-0 flex-1 truncate">{title}</span>
         {data?.error && <span title={data.error} className="flex items-center gap-1 text-warn-fg"><TriangleAlert size={12} aria-hidden />{d ? "stale" : "error"}</span>}
         {edit && <><button className="btn !min-h-7 !px-2" onClick={onEdit} aria-label={`Edit ${title}`}><Pencil size={12} /></button><button className="btn btn-danger !min-h-7 !px-2" onClick={onDelete} aria-label={`Delete ${title}`}><Trash2 size={12} /></button></>}

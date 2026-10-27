@@ -15,7 +15,7 @@ export const POST = route({ auth: "admin", body: WidgetInput }, ({ body }) => {
   const bad = validateFields(def.options, body.options);
   if (bad) throw new ApiError(400, "invalid_body", bad);
   const id = newId();
-  getDb().insert(widgets).values({ id, kind: body.kind, integrationId: def.pluginId ? body.integrationId! : null, title: body.title ?? null, options: body.options, area: body.area, size: body.size, hiddenPublic: body.hiddenPublic, sort: nextSort(widgets) }).run();
+  getDb().insert(widgets).values({ id, kind: body.kind, integrationId: def.pluginId ? body.integrationId! : null, title: body.title ?? null, options: body.options, area: body.area, size: body.size, hiddenPublic: body.hiddenPublic, publicDetail: body.publicDetail, sort: nextSort(widgets) }).run();
   changed();
   return { id };
 });

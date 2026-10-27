@@ -43,7 +43,7 @@ export function dashboardData(opts: { publicOnly: boolean }) {
   const visible = new Set(ss.map((s) => s.id));
   const ints = new Map(db.select({ id: integrations.id, name: integrations.name }).from(integrations).all().map((i) => [i.id, i.name]));
   return {
-    widgets: ws.map((w) => ({ id: w.id, kind: w.kind, kindTitle: widgetRegistry[w.kind]?.title ?? w.kind, title: w.title, size: w.size, area: w.area, hiddenPublic: w.hiddenPublic, integrationId: w.integrationId, integrationName: w.integrationId ? ints.get(w.integrationId) ?? null : null, ...(opts.publicOnly ? {} : { options: w.options }) })),
+    widgets: ws.map((w) => ({ id: w.id, kind: w.kind, kindTitle: widgetRegistry[w.kind]?.title ?? w.kind, title: w.title, size: w.size, area: w.area, hiddenPublic: w.hiddenPublic, publicDetail: w.publicDetail, integrationId: w.integrationId, integrationName: w.integrationId ? ints.get(w.integrationId) ?? null : null, ...(opts.publicOnly ? {} : { options: w.options }) })),
     groups: gs.map((g) => ({ id: g.id, name: g.name, icon: g.icon, collapsed: g.collapsed })),
     services: ss.map((s) => {
       const c = byService.get(s.id);
