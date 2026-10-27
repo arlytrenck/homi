@@ -4,6 +4,6 @@ import { users } from "@/server/db/schema";
 
 export const dynamic = "force-dynamic";
 export function GET() {
-  try { getDb().select().from(users).limit(1).all(); return NextResponse.json({ ok: true, version: process.env.npm_package_version ?? "0.2.0", db: "ok" }); }
+  try { getDb().select().from(users).limit(1).all(); return NextResponse.json({ ok: true, version: process.env.npm_package_version ?? "0.3.0", db: "ok" }); }
   catch { return NextResponse.json({ ok: false, db: "error" }, { status: 503 }); }
 }
