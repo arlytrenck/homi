@@ -12,7 +12,7 @@ export interface DashboardDTO { groups: GroupDTO[]; services: ServiceDTO[]; widg
 
 export interface WidgetDTO {
   id: string; kind: string; kindTitle: string; title: string | null; size: "sm" | "md" | "lg"; area: "header" | "main" | "sidebar";
-  hiddenPublic: boolean; integrationId: string | null; integrationName: string | null; options?: Record<string, any>;
+  hiddenPublic: boolean; publicDetail: "summary" | "full"; integrationId: string | null; integrationName: string | null; options?: Record<string, any>;
 }
 export type FieldSpecDTO =
   | { kind: "text" | "textarea" | "url" | "number"; label: string; required?: boolean; placeholder?: string; help?: string }
