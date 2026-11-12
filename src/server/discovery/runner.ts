@@ -20,8 +20,7 @@ export async function runDiscoveryOnce() {
     const r = syncDiscovered(containers, { host: process.env.HOMI_DISCOVERY_HOST });
     const prev = st.lastResult;
     st.lastResult = r; st.lastOkAt = Date.now(); st.lastError = null;
-    if (r.created || r.removed || !prev || prev.missing !== r.missing) changed();
-    else if (r.updated) changed();
+    if (r.created || r.updated || r.removed || !prev || prev.missing !== r.missing) changed();
   } catch (e) {
     st.lastError = (e as any)?.code === "ENOENT" || (e as any)?.code === "EACCES" ? `Cannot open Docker socket (${(e as any).code}). Mount it and check permissions.` : (e as Error).message;
   }

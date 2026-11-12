@@ -8,10 +8,10 @@ const strict = { allowLoopback: false };
 const loop = { allowLoopback: true };
 
 describe("blockedReason", () => {
-  it.each(["169.254.169.254", "::ffff:169.254.169.254", "0.0.0.0", "fe80::1", "127.0.0.1", "::1", "224.0.0.1"])("blocks %s", (ip) => {
+  it.each(["169.254.169.254", "::ffff:169.254.169.254", "::ffff:a9fe:a9fe", "::ffff:7f00:1", "64:ff9b::a9fe:a9fe", "0.0.0.0", "fe80::1", "127.0.0.1", "::1", "224.0.0.1"])("blocks %s", (ip) => {
     expect(blockedReason(ip, strict)).toBeTruthy();
   });
-  it.each(["10.0.0.5", "192.168.1.1", "172.16.0.9", "8.8.8.8", "fd00::1"])("allows %s", (ip) => {
+  it.each(["10.0.0.5", "192.168.1.1", "172.16.0.9", "8.8.8.8", "fd00::1", "::ffff:c0a8:101"])("allows %s", (ip) => {
     expect(blockedReason(ip, strict)).toBeNull();
   });
   it("allows loopback only when enabled, never metadata", () => {

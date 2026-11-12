@@ -9,6 +9,10 @@ export const PUT = route({ auth: "admin", body: LayoutInput }, ({ body }) => {
   const db = getDb();
   const seen = new Set<string>();
   for (const g of body.groups) for (const id of g.serviceIds) { if (seen.has(id)) throw new ApiError(400, "duplicate", "Service listed twice"); seen.add(id); }
+  const knownS = new Set(db.select({ id: services.id }).from(services).all().map((r) => r.id));
+  const knownG = new Set(db.select({ id: groups.id }).from(groups).all().map((r) => r.id));
+  if ([...seen].some((id) => !knownS.has(id))) throw new ApiError(400, "unknown_service", "Layout lists a service that no longer exists");
+  if (body.groups.some((g) => g.id !== null && !knownG.has(g.id)) || body.groupOrder?.some((id) => !knownG.has(id))) throw new ApiError(400, "unknown_group", "Layout lists a group that no longer exists");
   db.transaction((tx) => {
     body.groupOrder?.forEach((id, i) => tx.update(groups).set({ sort: i }).where(eq(groups.id, id)).run());
     let n = 0;

@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { validTimeZone } from "@/server/notify/quiet";
 
 export const CheckInput = z.object({
-  type: z.enum(["http", "tcp", "ping"]),
+  type: z.enum(["http", "tcp", "ping", "tls", "heartbeat"]),
   target: z.string().trim().min(1).max(500),
   intervalS: z.number().int().min(10).max(86400).default(60),
   timeoutMs: z.number().int().min(500).max(30000).default(5000),
+  httpMethod: z.enum(["GET", "HEAD"]).default("GET"),
   expectedStatus: z.string().regex(/^\d{3}(-\d{3})?$/).default("200-399"),
   keyword: z.string().max(200).nullish(),
   ignoreTls: z.boolean().default(false),
@@ -23,10 +25,13 @@ const serviceShape = {
   targetBlank: z.boolean(),
   tags: z.array(z.string().max(32)).max(16),
   hiddenPublic: z.boolean(),
+  alertsMuted: z.boolean(),
+  /** upstream service id; null/omitted = none */
+  dependsOnId: z.string().max(40).nullish(),
   check: CheckInput.nullish(),
 };
 // Defaults live only on the create schema; patch schemas must not inject them.
-export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false) });
+export const ServiceInput = z.object({ ...serviceShape, targetBlank: serviceShape.targetBlank.default(true), tags: serviceShape.tags.default([]), hiddenPublic: serviceShape.hiddenPublic.default(false), alertsMuted: serviceShape.alertsMuted.default(false) });
 export const ServicePatch = z.object(serviceShape).partial();
 export type ServiceInput = z.infer<typeof ServiceInput>;
 
@@ -41,10 +46,35 @@ export const SettingsInput = z.object({
   title: z.string().max(60).optional(),
   theme: z.enum(["system", "light", "dark"]).optional(),
   publicView: z.boolean().optional(),
+  statusPage: z.boolean().optional(),
   allowLoopback: z.boolean().optional(),
   retentionHours: z.number().int().min(1).max(24 * 30).optional(),
   weather: z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180), units: z.enum(["metric", "imperial"]) }).nullish(),
 });
+
+export const destUrl = z.string().trim().max(1000).refine((u) => /^https?:\/\/[^\s/]+/i.test(u), "Must be an http(s) URL");
+export const QuietInput = z.object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
+      digest: z.boolean(),
+      overrideTags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+    });
+export const NotificationsInput = z.object({
+  destinations: z.array(z.object({
+    /** present = an existing destination (its URL is kept when `url` is omitted) */
+    id: z.string().max(40).optional(),
+    kind: z.enum(["webhook", "ntfy"]),
+    url: destUrl.optional(),
+    enabled: z.boolean(),
+    onRecovery: z.boolean(),
+    groupIds: z.array(z.string().max(40)).max(200).default([]),
+    tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+    quiet: QuietInput.optional(),
+  })).max(5),
+});
+export const NotificationsTest = z.object({ id: z.string().max(40).optional(), kind: z.enum(["webhook", "ntfy"]).optional(), url: destUrl.optional() });
 
 const baseUrl = z.string().trim().max(500).refine((u) => /^https?:\/\/[^\s/]+/i.test(u) || /^unix:\/\/\/\S+$/.test(u), "Must be an http(s) URL (or unix:///path for Docker)");
 
@@ -83,3 +113,26 @@ const widgetShape = {
 export const WidgetInput = z.object({ ...widgetShape, options: widgetShape.options.default({}), area: widgetShape.area.default("main"), size: widgetShape.size.default("md"), hiddenPublic: widgetShape.hiddenPublic.default(true) });
 export const WidgetPatch = z.object(widgetShape).omit({ kind: true, integrationId: true }).partial();
 export type WidgetInput = z.infer<typeof WidgetInput>;
+
+export const MaintenanceInput = z.object({
+  name: z.string().trim().max(100).optional(),
+  kind: z.enum(["all", "group", "service"]),
+  targetId: z.string().max(40).optional(),
+  /** epoch ms; omitted = now */
+  startsAt: z.number().int().positive().optional(),
+  endsAt: z.number().int().positive().optional(),
+  /** alternative to endsAt, counted from the start */
+  minutes: z.number().int().min(1).max(60 * 24 * 30).optional(),
+}).refine((v) => v.kind === "all" || !!v.targetId, { message: "Pick a service or group", path: ["targetId"] })
+  .refine((v) => (v.endsAt !== undefined) !== (v.minutes !== undefined), { message: "Give either an end time or a duration", path: ["minutes"] });
+
+export const MaintenanceScheduleInput = z.object({
+  name: z.string().trim().max(100).optional(),
+  kind: z.enum(["all", "group", "service"]),
+  targetId: z.string().max(40).optional(),
+  /** 0 = Sunday … 6 = Saturday */
+  days: z.array(z.number().int().min(0).max(6)).min(1, "Pick at least one day").max(7),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  durationMin: z.number().int().min(1).max(48 * 60),
+  tz: z.string().max(64).refine(validTimeZone, "Unknown time zone"),
+}).refine((v) => v.kind === "all" || !!v.targetId, { message: "Pick a service or group", path: ["targetId"] });

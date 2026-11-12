@@ -14,10 +14,12 @@ export interface Discovered {
   icon: string | null;
   description: string | null;
   hiddenPublic: boolean;
+  tags: string[];
   check: { type: "http" | "tcp" | "ping"; target: string } | null;
 }
 export type ParseResult = { ok: true; value: Discovered } | { ok: false; key: string; reason: string } | null;
 
+const parseTags = (v?: string) => [...new Set((v ?? "").split(",").map((t) => t.trim().slice(0, 32)).filter(Boolean))].slice(0, 16);
 const truthy = (v?: string) => v !== undefined && ["true", "1", "yes"].includes(v.toLowerCase());
 const httpUrl = (u: string) => { try { return ["http:", "https:"].includes(new URL(u).protocol); } catch { return false; } };
 
@@ -56,6 +58,7 @@ export function parseContainer(c: DockerContainer, opts: { host?: string }): Par
       group: L["homi.group"]?.trim() || null,
       icon: L["homi.icon"]?.trim() || null,
       description: L["homi.description"]?.trim() || null,
+      tags: parseTags(L["homi.tags"]),
       hiddenPublic: L["homi.public"] !== undefined && !truthy(L["homi.public"]),
     },
   };

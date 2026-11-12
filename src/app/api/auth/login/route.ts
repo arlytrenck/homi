@@ -1,19 +1,19 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { ApiError, route, isSecure, clientIp, audit } from "@/server/api";
+import { ApiError, route, isSecure, clientIp, trustedClientIp, audit } from "@/server/api";
 import { getDb } from "@/server/db/client";
 import { users } from "@/server/db/schema";
 import { verifyPassword } from "@/server/auth/password";
 import { COOKIE, createSession, cookieOptions } from "@/server/auth/session";
-import { checkLimit, recordFailure, recordSuccess } from "@/server/auth/ratelimit";
+import { checkLimit, loginKeys, recordFailure, recordSuccess } from "@/server/auth/ratelimit";
 
 export const dynamic = "force-dynamic";
 const Body = z.object({ username: z.string().max(64), password: z.string().max(256) });
 
 export const POST = route({ auth: "none", body: Body }, async ({ req, body }) => {
   const ip = clientIp(req);
-  const keys = [`ip:${ip}`, `user:${body.username.toLowerCase()}`];
+  const keys = loginKeys(trustedClientIp(req), body.username);
   const wait = Math.max(...keys.map((k) => checkLimit(k)));
   if (wait > 0) {
     const r = NextResponse.json({ error: { code: "rate_limited", message: "Too many attempts. Try again later." } }, { status: 429 });

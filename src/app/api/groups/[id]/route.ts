@@ -4,6 +4,7 @@ import { getDb } from "@/server/db/client";
 import { groups } from "@/server/db/schema";
 import { GroupInput } from "@/lib/schemas";
 import { changed } from "@/server/data";
+import { pruneGroup } from "@/server/notify/notify";
 export const dynamic = "force-dynamic";
 export const PATCH = route({ auth: "admin", body: GroupInput.partial() }, ({ body, params }) => {
   const r = getDb().update(groups).set({ ...(body.name !== undefined && { name: body.name }), ...(body.icon !== undefined && { icon: body.icon ?? null }), ...(body.collapsed !== undefined && { collapsed: body.collapsed }) }).where(eq(groups.id, params.id)).run();
@@ -11,7 +12,9 @@ export const PATCH = route({ auth: "admin", body: GroupInput.partial() }, ({ bod
   changed();
 });
 export const DELETE = route({ auth: "admin" }, ({ params }) => {
-  const r = getDb().delete(groups).where(eq(groups.id, params.id)).run();
+  const db = getDb();
+  const r = db.delete(groups).where(eq(groups.id, params.id)).run();
   if (!r.changes) throw new ApiError(404, "not_found", "Group not found");
+  pruneGroup(db, params.id);
   changed();
 });

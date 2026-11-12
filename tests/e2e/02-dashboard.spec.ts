@@ -19,6 +19,17 @@ test("add a group and a monitored service; it turns up", async ({ page }) => {
   await expect(tile.getByRole("img", { name: "Up" })).toBeVisible({ timeout: 20_000 });
 });
 
+test("uptime details open for a monitored service and switch ranges", async ({ page }) => {
+  await openDashboard(page);
+  await page.getByRole("button", { name: "Homi itself uptime details" }).click();
+  const dlg = page.getByRole("dialog", { name: "Homi itself" });
+  await expect(dlg.getByText("Uptime", { exact: true })).toBeVisible();
+  await dlg.getByRole("tab", { name: "7d" }).click();
+  await expect(dlg.getByRole("tab", { name: "7d" })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Escape");
+  await expect(dlg).toBeHidden();
+});
+
 test("the service test button explains why a target is blocked", async ({ page }) => {
   await openDashboard(page);
   await enterEditMode(page);

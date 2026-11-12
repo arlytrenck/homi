@@ -19,7 +19,7 @@ Open [brandkit.html](brandkit.html) for the visual version. Color tokens live in
 
 ## Logo
 
-The mark is a house (home) with a status dot at its center: the dot is a service that is alive. The wordmark repeats the idea: the dot of the **i** is the same dot.
+The mark is a roof over a 2×2 grid of services, so the grid is the house; one cell is lit teal, a service that is alive. The wordmark repeats the idea: the dot of the **i** is a teal square, the same lit cell.
 
 | File | Use |
 |---|---|
@@ -28,20 +28,20 @@ The mark is a house (home) with a status dot at its center: the dot is a service
 | `homi-mark-light.svg` | Mark alone for **light** surfaces (darker gradient). |
 | `homi-mark-mono.svg` | One color via `currentColor`: print, embossing, single-color contexts. |
 | `homi-wordmark.svg` / `homi-wordmark-light.svg` / `homi-wordmark-mono.svg` | Wordmark alone: dark surfaces, light surfaces, single color. Text is outlined from Inter, so it renders identically everywhere. |
-| `homi-lockup.svg` / `homi-lockup-light.svg` | Tile + wordmark, horizontal. Light variant has a darker wordmark gradient for white backgrounds. |
+| `homi-lockup.svg` / `homi-lockup-light.svg` | Bare mark + wordmark, horizontal. Light variant uses dark ink and `teal-600` for white backgrounds. |
 | `homi-icon-maskable.svg` | Full-bleed PWA/Android icon; mark sits inside the 80% safe zone. |
 | `homi-banner.svg` / `.png` | 1280×640 README banner. |
 | `homi-social-card.svg` | 1200×630 Open Graph / Twitter card (also fits GitHub's social preview slot). |
 | `export/` | Ready-to-use PNGs (transparent, 2×) and vector PDFs for print: lockup, wordmark and mark in dark and light, plus `homi-social-card.png`. |
 
-Everything is generated and reproducible: `node scripts/brand-outline.mjs` rebuilds the outlined wordmark, lockups and social card from Inter (`@fontsource/inter`); `node scripts/brand-render.mjs` rebuilds the app icons and the `export/` PNGs and PDFs.
+Everything is generated and reproducible: `node scripts/brand-outline.mjs` rebuilds every SVG here (mark, tile, wordmark, lockups, banner, social card) from Inter and JetBrains Mono (`@fontsource`); `node scripts/brand-render.mjs` rebuilds the app icons, banner PNG and `export/` PNGs and PDFs.
 
 ### Rules
 
-- **Clear space:** keep at least the width of the status dot's outer ring (about 1/5 of the mark's width) free on all sides.
+- **Clear space:** keep at least the width of one grid cell (about 1/4 of the mark's width) free on all sides.
 - **Minimum size:** mark 16 px, lockup 96 px wide. Below 24 px use the tile (`homi-logo`), which holds up better than the bare mark.
-- **Pick the variant by background**, not by taste. The dark-surface gradient (teal `#2dd4bf`) is only 1.9:1 on white; on white always use `homi-mark-light` or the tile.
-- Don't recolor, rotate, outline, add shadows or glows, stretch, or change the gradient direction (teal top-left to indigo bottom-right).
+- **Pick the variant by background**, not by taste. The dark-surface teal (`#2dd4bf`) is only 1.9:1 on white; on white always use the `-light` files or the tile.
+- Don't recolor, rotate, outline, add shadows or glows, stretch, or add gradients. Keep exactly one teal cell, top right.
 - Don't put the mark on busy photos. Use the tile.
 - Wordmark is lowercase: **homi**.
 
@@ -59,7 +59,7 @@ Everything is generated and reproducible: `node scripts/brand-outline.mjs` rebui
 | `indigo-500` | `#6366f1` | Gradient end on dark |
 | `indigo-600` | `#4f46e5` | Accent on light (buttons, focus, links) |
 
-**Gradient:** teal to indigo at 45° (top-left to bottom-right). Dark surfaces use `teal-400 → indigo-500`; light surfaces use `teal-600 → indigo-600`. In code, `var(--brand-a)` and `var(--brand-b)` switch automatically with the theme.
+**Logo color:** flat. Ink (`#f1f5f9` on dark, `navy-950` on light) plus one teal cell. The logo has no gradient; the teal-to-indigo gradient remains only in app UI accents until those are migrated.
 
 **Accent:** `indigo-600` on light, `indigo-400` on dark. Primary buttons are white on `indigo-600` (6.3:1) and `navy-950` on `indigo-400` (6.4:1).
 
@@ -99,7 +99,7 @@ Brand teal is deliberately not used for "up", so a green check never competes wi
 ## Shape, space, motion
 
 - Tile corner radius is 23% of its size (`28/120`). Cards `10 px`, controls `8 px`, dense mode `6 px`.
-- Flat surfaces with a 1 px border; a single soft shadow only in light mode. No glows, no gradients on surfaces (the gradient is reserved for the logo).
+- Flat surfaces with a 1 px border; a single soft shadow only in light mode. No glows.
 - Icons: [Lucide](https://lucide.dev), 2 px stroke, round caps and joins, which matches the mark's 7/120 stroke.
 - Motion: 150 ms ease-out for hover and focus. The status dot may pulse slowly while a check is running. Respect `prefers-reduced-motion`.
 - Touch targets are at least 44 px on mobile.

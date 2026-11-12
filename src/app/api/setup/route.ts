@@ -5,13 +5,14 @@ import { ApiError, route, isSecure, clientIp, audit } from "@/server/api";
 import { getDb } from "@/server/db/client";
 import { users } from "@/server/db/schema";
 import { hashPassword } from "@/server/auth/password";
+import { setupToken, setupTokenMatches } from "@/server/auth/setupToken";
 import { COOKIE, createSession, cookieOptions, newId } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
 const Body = z.object({ username: z.string().trim().min(3).max(64), password: z.string().min(10).max(256), setupToken: z.string().optional() });
 
 export const POST = route({ auth: "none", body: Body }, async ({ req, body }) => {
-  if (process.env.HOMI_SETUP_TOKEN && body.setupToken !== process.env.HOMI_SETUP_TOKEN) throw new ApiError(403, "bad_setup_token", "Invalid setup token");
+  if (!setupTokenMatches(body.setupToken, setupToken())) throw new ApiError(403, "bad_setup_token", "Invalid setup token");
   const db = getDb();
   const passwordHash = await hashPassword(body.password);
   const userId = newId();

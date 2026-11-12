@@ -1,10 +1,11 @@
 import "server-only";
 import net from "node:net";
+import tls from "node:tls";
 import { execFile } from "node:child_process";
-import { safeFetch } from "@/server/net/safeFetch";
+import { assertAllowedLiteral, defaultPolicy, guardedLookup, safeFetch } from "@/server/net/safeFetch";
 
 export interface CheckSpec {
-  type: "http" | "tcp" | "ping";
+  type: "http" | "tcp" | "ping" | "tls" | "heartbeat";
   target: string;
   timeoutMs: number;
   httpMethod?: string;
@@ -12,7 +13,7 @@ export interface CheckSpec {
   keyword?: string | null;
   ignoreTls?: boolean;
 }
-export interface CheckOutcome { ok: boolean; latencyMs: number | null; code?: number; error?: string; degraded?: boolean }
+export interface CheckOutcome { ok: boolean; latencyMs: number | null; code?: number; error?: string; degraded?: boolean; /** a failure that means "down" right away, skipping the two-failure debounce */ immediate?: boolean }
 
 export function statusMatches(code: number, expected: string): boolean {
   const [a, b] = expected.split("-").map(Number);
@@ -30,10 +31,36 @@ export function parseHostPort(target: string, defaultPort?: number): { host: str
 
 async function tcp(spec: CheckSpec): Promise<CheckOutcome> {
   const { host, port } = parseHostPort(spec.target);
+  assertAllowedLiteral(host, defaultPolicy());
   const t0 = Date.now();
   return new Promise((resolve) => {
-    const s = net.connect({ host, port, timeout: spec.timeoutMs });
+    const s = net.connect({ host, port, timeout: spec.timeoutMs, lookup: guardedLookup(defaultPolicy()) });
     s.once("connect", () => { s.destroy(); resolve({ ok: true, latencyMs: Date.now() - t0 }); });
+    s.once("timeout", () => { s.destroy(); resolve({ ok: false, latencyMs: null, error: "timeout" }); });
+    s.once("error", (e) => resolve({ ok: false, latencyMs: null, error: e.message }));
+  });
+}
+
+const DAY = 86_400_000;
+export const CERT_WARN_DAYS = 14;
+
+/** Expired = down, expiring soon = degraded (with the number of days in the message). */
+export function certOutcome(validTo: string, latencyMs: number, now = Date.now()): CheckOutcome {
+  const left = Date.parse(validTo) - now;
+  if (!Number.isFinite(left)) return { ok: false, latencyMs, error: "unreadable certificate expiry" };
+  if (left <= 0) return { ok: false, latencyMs, error: `certificate expired ${Math.max(1, Math.floor(-left / DAY))} day(s) ago` };
+  const days = Math.ceil(left / DAY);
+  return days <= CERT_WARN_DAYS ? { ok: true, degraded: true, latencyMs, error: `certificate expires in ${days} day(s)` } : { ok: true, latencyMs };
+}
+
+async function tlsExpiry(spec: CheckSpec): Promise<CheckOutcome> {
+  const { host, port } = parseHostPort(spec.target, 443);
+  assertAllowedLiteral(host, defaultPolicy());
+  const t0 = Date.now();
+  return new Promise((resolve) => {
+    // Expiry is the point: verify nothing else, so self-signed and private-CA certificates can be tracked too.
+    const s = tls.connect({ host, port, servername: net.isIP(host) ? undefined : host, rejectUnauthorized: false, timeout: spec.timeoutMs, lookup: guardedLookup(defaultPolicy()) });
+    s.once("secureConnect", () => { const c = s.getPeerCertificate(); s.destroy(); resolve(c?.valid_to ? certOutcome(c.valid_to, Date.now() - t0) : { ok: false, latencyMs: null, error: "no certificate presented" }); });
     s.once("timeout", () => { s.destroy(); resolve({ ok: false, latencyMs: null, error: "timeout" }); });
     s.once("error", (e) => resolve({ ok: false, latencyMs: null, error: e.message }));
   });
@@ -42,6 +69,7 @@ async function tcp(spec: CheckSpec): Promise<CheckOutcome> {
 async function ping(spec: CheckSpec): Promise<CheckOutcome> {
   const host = spec.target.trim();
   if (!HOST_RE.test(host)) return { ok: false, latencyMs: null, error: "invalid host" };
+  try { assertAllowedLiteral(host, defaultPolicy()); } catch (e) { return { ok: false, latencyMs: null, error: (e as Error).message }; }
   const t0 = Date.now();
   return new Promise((resolve) => {
     execFile("ping", ["-c", "1", "-W", String(Math.max(1, Math.ceil(spec.timeoutMs / 1000))), host], { timeout: spec.timeoutMs + 1000 }, (err, stdout) => {
@@ -77,6 +105,8 @@ export function runCheck(spec: CheckSpec): Promise<CheckOutcome> {
   switch (spec.type) {
     case "tcp": return tcp(spec).catch((e) => ({ ok: false, latencyMs: null, error: e.message }));
     case "ping": return ping(spec);
+    case "tls": return tlsExpiry(spec).catch((e) => ({ ok: false, latencyMs: null, error: e.message }));
+    case "heartbeat": return Promise.resolve({ ok: false, latencyMs: null, error: "heartbeat checks are push-based" }); // reported via /api/heartbeat, never run
     default: return http(spec);
   }
 }

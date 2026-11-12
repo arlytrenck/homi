@@ -1,0 +1,1 @@
+ALTER TABLE `services` ADD `alerts_muted` integer DEFAULT false NOT NULL;

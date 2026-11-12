@@ -12,6 +12,7 @@ const jobs = [
   ["homi-icon-maskable.svg", "public/icons/icon-maskable-512.png", 512],
   ["homi-icon-maskable.svg", "src/app/apple-icon.png", 180], // iOS rounds the corners itself
   ["homi-logo.svg", "src/app/icon.png", 64],
+  ["homi-logo.svg", "docs/brand/homi-logo.png", 512],
 ];
 
 const browser = await chromium.launch();
@@ -24,6 +25,11 @@ for (const [src, out, size] of jobs) {
   await page.screenshot({ path: out, omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
   console.log("wrote", out);
 }
+// README banner, 1280x640
+await page.setViewportSize({ width: 1280, height: 640 });
+await page.setContent(`<style>html,body{margin:0}svg{display:block}</style>${fs.readFileSync(path.join(brand, "homi-banner.svg"), "utf8")}`);
+await page.screenshot({ path: path.join(brand, "homi-banner.png"), clip: { x: 0, y: 0, width: 1280, height: 640 } });
+console.log("wrote docs/brand/homi-banner.png");
 await browser.close();
 
 // ---- Distribution exports (docs/brand/export): PNGs for web and decks, vector PDFs for print ----
@@ -35,10 +41,10 @@ const pg1 = await b2.newPage({ deviceScaleFactor: 1 }); // social card at its na
 const exports = [
   // [svg, base name, css width, css height]
   ["homi-social-card.svg", "homi-social-card", 1200, 630],
-  ["homi-lockup.svg", "homi-lockup-dark", 372, 120],
-  ["homi-lockup-light.svg", "homi-lockup-light", 372, 120],
-  ["homi-wordmark.svg", "homi-wordmark-dark", 239, 100],
-  ["homi-wordmark-light.svg", "homi-wordmark-light", 239, 100],
+  ["homi-lockup.svg", "homi-lockup-dark", 361, 120],
+  ["homi-lockup-light.svg", "homi-lockup-light", 361, 120],
+  ["homi-wordmark.svg", "homi-wordmark-dark", 229, 100],
+  ["homi-wordmark-light.svg", "homi-wordmark-light", 229, 100],
   ["homi-mark.svg", "homi-mark-dark", 168, 168],
   ["homi-mark-light.svg", "homi-mark-light", 168, 168],
 ];

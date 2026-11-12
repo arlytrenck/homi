@@ -1,5 +1,7 @@
 import { type NextRequest } from "next/server";
 import { getViewer } from "@/server/api";
+import { getDb } from "@/server/db/client";
+import { visibleToPublic } from "@/server/events/visibility";
 import { hub, type HomiEvent } from "@/server/events/hub";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,7 +14,7 @@ export function GET(req: NextRequest) {
   const stream = new ReadableStream({
     start(ctl) {
       const send = (e: unknown) => ctl.enqueue(enc.encode(`data: ${JSON.stringify(e)}\n\n`));
-      const on = (e: HomiEvent) => send(e);
+      const on = (e: HomiEvent) => { if (viewer.kind === "admin" || visibleToPublic(getDb(), e)) send(e); };
       hub.on("event", on);
       const ka = setInterval(() => ctl.enqueue(enc.encode(": ka\n\n")), 20_000);
       cleanup = () => { hub.off("event", on); clearInterval(ka); };

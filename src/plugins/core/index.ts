@@ -30,7 +30,7 @@ export const bookmarks = defineCoreWidget({
   id: "core.bookmarks", title: "Bookmarks", minIntervalS: 5,
   options: { links: { kind: "textarea", label: "One per line: Name | https://url", required: true } },
   async fetch(_c, o) {
-    const rows = String(o.links ?? "").split("\n").map((l) => l.split("|").map((x) => x.trim())).filter(([n, u]) => n && u && /^https?:\/\//i.test(u)).map(([n, u]) => ({ primary: n, secondary: new URL(u).host, href: u }));
+    const rows = String(o.links ?? "").split("\n").map((l) => l.split("|").map((x) => x.trim())).filter(([n, u]) => n && u && /^https?:\/\//i.test(u) && URL.canParse(u)).map(([n, u]) => ({ primary: n, secondary: new URL(u).host, href: u }));
     return { rows };
   },
 });
